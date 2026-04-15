@@ -1,15 +1,19 @@
-import { Routes, Route } from "react-router-dom";
-
-import Login from "./pages/Login";
-import ResetPassword from "./pages/ResetKirim";
-
+import { useState } from 'react'
+import { Routes, Route } from 'react-router-dom'
+/* Pages */
+import Login from './pages/Login'
+import Reset from './pages/Reset'
 function App() {
+  const [count, setCount] = useState(0)
+
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path='/login' element={<Login />}></Route>
+      <Route path='/reset' element={<Reset />}></Route>
+      
     </Routes>
-  );
+
+  )
 }
 
-export default App;
+export default App

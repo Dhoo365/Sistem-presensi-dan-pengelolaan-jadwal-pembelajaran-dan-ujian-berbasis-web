@@ -1,8 +1,7 @@
 import bg from "../assets/foto/background.png";
 import logo from "../assets/foto/logo.png";
-import { Link } from "react-router-dom";
 
-export default function Login() {
+export default function Reset() {
     const handleSubmit = (e) => {
         e.preventDefault();
         alert("Login berhasil (dummy)");
@@ -47,11 +46,11 @@ export default function Login() {
                                 <span>Masuk</span>
                             </button>
 
-              <Link to="/reset-password" className="forgot">
-                Lupa Password?
-              </Link>
-            </form>
-          </div>
+                            <a href="#" className="forgot">
+                                Lupa Password?
+                            </a>
+                        </form>
+                    </div>
 
                     {/* RIGHT */}
                     <div className="right">
