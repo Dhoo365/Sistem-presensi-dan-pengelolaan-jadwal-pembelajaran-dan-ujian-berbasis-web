@@ -1,7 +1,7 @@
 import bg from "../assets/foto/background.png";
 import logo from "../assets/foto/logo.png";
 
-export default function Login() {
+export default function Reset() {
     const handleSubmit = (e) => {
         e.preventDefault();
         alert("Login berhasil (dummy)");
