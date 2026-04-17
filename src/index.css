@@ -1,260 +1,32 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
+@import "tailwindcss";
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
-body, html, #root {
-  height: 100%;
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite ease-in-out;
 }
 
 body {
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* BACKGROUND */
-.bg {
-  position: fixed;
-  inset: -20px;
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  filter: blur(2.5px) brightness(0.8);
-  z-index: -2;
-}
-
-.overlay {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.1);
-  z-index: -1;
-}
-
-/* WRAPPER */
-.wrapper {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-/* CARD */
-.card {
-  width: 1000px;
-  height: 600px;
-  display: flex;
-  border-radius: 20px;
-  overflow: hidden;
-  position: relative;
-  backdrop-filter: blur(5px);
-}
-
-/* BORDER PUTIH (HANYA DI CARD) */
-.card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border: 3px solid #ffffff;
-  border-radius: 20px;
-  pointer-events: none;
-}
-
-/* LEFT PANEL */
-.left {
-  width: 50%;
-  background: #c4c4c4;
-  padding: 60px;
-  box-shadow: -1px 9px 100px 25px rgba(0,0,0,0.5);
-}
-
-.left h1 {
-  font-size: 40px;
-  font-weight: 800;
-  color: #4B2511;
-  text-shadow: 0 4px 4px rgba(0,0,0,0.34);
-}
-
-.line {
-  width: 70px;
-  height: 5px;
-  background: #4B2511;
-  margin: 10px 0 25px;
-}
-
-.desc {
-  font-size: 14px;
-  font-style: italic;
-  color: rgba(0,0,0,0.5);
-  margin-bottom: 25px;
-}
-
-/* INPUT */
-label {
-  font-weight: 600;
-  font-size: 16px;
-  color: #4B2511;
-}
-
-.input-box {
-  display: flex;
-  align-items: center;
-  background: #EAEAEA;
-  border: 1px solid #000;
-  border-radius: 10px;
-  padding: 8px 12px;
-  margin: 8px 0 20px;
-}
-
-.input-box span {
-  margin-right: 8px;
-}
-
-.input-box input {
-  border: none;
-  background: transparent;
-  width: 100%;
-  outline: none;
-  font-size: 14px;
-}
-
-/* BUTTON */
-button {
-  width: 100%;
-  height: 45px;
-
-  background: #4B2511;
-  color: #fff;
-
-  border: none;
-  border-radius: 12px;
-
-  font-size: 16px;
-  font-weight: 600;
-
-  display: flex;               /* 🔥 ini kunci */
-  justify-content: center;     /* center horizontal */
-  align-items: center;         /* center vertical */
-
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  box-shadow: 0 6px 15px rgba(0,0,0,0.25);
-}
-
-/* hover */
-button:hover {
-  background: #84421f;
-}
-
-/* klik */
-button:active {
-  transform: scale(0.97);
-}
-
-/* FORGOT */
-.forgot {
-  display: block;
-  text-align: center;
-
-  margin-top: 18px; /* 🔥 ini yang bikin turun */
-  
-  font-size: 14px;
-  font-style: italic;
-  color: rgba(0,0,0,0.5);
-  text-decoration: none;
-}
-
-.forgot:hover {
-  color: #4B2511;
-}
-
-/* RIGHT PANEL */
-.right {
-  width: 50%;
-  background: rgba(45,39,35,0.9);
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-
-  text-align: center;
-}
-
-.right-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-
-  transform: translateY(-40px); /* 🔥 naikkan */
-}
-
-.right img {
-  width: 330px;        /* 🔥 lebih besar */
-  margin-bottom:-50px; /* 🔥 rapatkan ke teks */
-  filter: drop-shadow(2px 4px 16px rgba(0,0,0,0.48));
-}
-
-.right h2 {
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.25;
-  max-width: 420px;
-
-  margin: 0; /* 🔥 wajib nol */
-
-  color: white;
-  text-shadow: 0 4px 4px rgba(0,0,0,0.34);
-}
-
-.input-box {
-  display: flex;
-  align-items: center;
-  background: #EAEAEA;
-  border: 1.5px solid #000;
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin: 8px 0 20px;
-}
-
-.icon {
-  font-size: 24px;
-  color: #7a7a7a;
-  margin-right: 12px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.input-box input {
-  border: none;
-  outline: none;
-  background: transparent;
-  width: 100%;
-  font-size: 15px;
-  font-style: italic;
-  color: rgba(0,0,0,0.7);
-}
-
-.input-box input::placeholder {
-  color: rgba(0,0,0,0.4);
-}
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-  .card {
-    flex-direction: column;
-    width: 90%;
-    height: auto;
-  }
-
-  .left, .right {
-    width: 100%;
-  }
-
-  .right {
-    padding: 30px;
-  }
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

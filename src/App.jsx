@@ -1,20 +1,31 @@
-import { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
-/* Pages */
-import Login from './pages/Login'
-import Reset from './pages/Reset'
-import ResetKirim from './pages/ResetKirim'
-import DashboardOrtu from './pages/DashboardOrtu'
+import { Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetKirim";
+import AdminBeranda from "./pages/AdminBeranda";
+import AdminLayout from './layouts/AdminLayout'
+import AdminKelolaMurid from "./pages/AdminKelolaMurid";
+import AdminKelolaGuru from './pages/AdminKelolaGuru'
+import AdminKelolaKelas from './pages/AdminKelolaKelas'
+import AdminKelolaJadwal from './pages/AdminKelolaJadwal'
+import AdminKelolaAkun from "./pages/AdminKelolaAkun";
+import NotFoundPage from "./pages/NotFoundPage";
+
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <Routes>
-      <Route path='/login' element={<Login />}></Route>
-      <Route path='/reset' element={<Reset />}></Route>
-      <Route path='/reset-kirim' element={<ResetKirim />}></Route>
-      <Route path='/orangtua' element={<DashboardOrtu />}></Route>
+      <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminBeranda />} />
+        <Route path="murid" element={<AdminKelolaMurid />} />
+        <Route path="guru" element={<AdminKelolaGuru />} />
+        <Route path="kelas" element={<AdminKelolaKelas />} />
+        <Route path="jadwal" element={<AdminKelolaJadwal />} />
+        <Route path="akun" element={<AdminKelolaAkun />} />
+      </Route>
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
 
   )

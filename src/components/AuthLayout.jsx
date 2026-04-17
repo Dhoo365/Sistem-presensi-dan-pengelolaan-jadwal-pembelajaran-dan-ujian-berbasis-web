@@ -1,4 +1,3 @@
-import "../styles/authLayout.css";
 import bg from "../assets/foto/background.png";
 import logo from "../assets/foto/logo.png";
 
