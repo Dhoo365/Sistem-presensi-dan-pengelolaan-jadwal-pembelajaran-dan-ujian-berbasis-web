@@ -8,8 +8,10 @@ import AdminKelolaGuru from './pages/AdminKelolaGuru'
 import AdminKelolaKelas from './pages/AdminKelolaKelas'
 import AdminKelolaJadwal from './pages/AdminKelolaJadwal'
 import AdminKelolaAkun from "./pages/AdminKelolaAkun";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -23,6 +25,7 @@ function App() {
         <Route path="jadwal" element={<AdminKelolaJadwal />} />
         <Route path="akun" element={<AdminKelolaAkun />} />
       </Route>
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

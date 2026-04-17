@@ -15,7 +15,6 @@ import {
   ChevronRight,
   Clock
 } from 'lucide-react';
-import NavbarAdmin from '../components/NavbarAdmin';
 
 // Sub-komponen untuk Sidebar Link
 const SidebarItem = ({ icon: Icon, label, active = false }) => (
@@ -81,146 +80,111 @@ const ScheduleCard = ({ type, grade, day, subject, teacher, time, date }) => {
 
 const AdminBeranda = () => {
   return (
-    <>
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-8 pb-20">
+    <div className="space-y-8">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          count="2"
+          label="Murid Aktif"
+          subLabel="Total Murid"
+          icon={Users}
+          colorClass="bg-[#FDEEDC] border-orange-200"
+          iconBg="bg-[#F2A65A]"
+        />
+        <StatCard
+          count="4"
+          label="Guru Aktif"
+          subLabel="Total Tenaga Pengajar"
+          icon={GraduationCap}
+          colorClass="bg-[#C8E8D2] border-green-300"
+          iconBg="bg-[#5CB874]"
+        />
+        <StatCard
+          count="6"
+          label="Mapel Aktif"
+          subLabel="Total Mata Pelajaran"
+          icon={BookOpen}
+          colorClass="bg-[#BBD0E3] border-blue-300"
+          iconBg="bg-[#518CB8]"
+        />
+        <StatCard
+          count="12"
+          label="Kelas Aktif"
+          subLabel="Total Ruang Kelas"
+          icon={School}
+          colorClass="bg-[#DABEFF] border-purple-300"
+          iconBg="bg-[#A366FF]"
+        />
+      </div>
 
-          {/* Header */}
-          <header className="bg-[#DFDFDF] rounded-2xl p-6 flex justify-between items-center mb-8 border border-gray-300 shadow-sm">
-            <div className="flex items-center gap-6">
-              <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-                <Menu size={32} className="text-gray-600" />
-              </button>
-              <div>
-                <h2 className="text-3xl font-bold text-gray-800 tracking-tight">Beranda</h2>
-                <p className="text-gray-500 text-sm font-medium italic">Selamat Datang di Panel Admin</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-5 border-l-2 border-gray-400 pl-6">
-              <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white ring-4 ring-gray-200">
-                <User size={24} />
-              </div>
-              <div>
-                <p className="font-bold text-gray-800 text-lg leading-none">Admin</p>
-                <p className="text-sm text-gray-500 font-medium mt-1">Asep Yanto Kurnawan</p>
-              </div>
-            </div>
-          </header>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard
-              count="2"
-              label="Murid Aktif"
-              subLabel="Total Murid"
-              icon={Users}
-              colorClass="bg-[#FDEEDC] border-orange-200"
-              iconBg="bg-[#F2A65A]"
-            />
-            <StatCard
-              count="4"
-              label="Guru Aktif"
-              subLabel="Total Tenaga Pengajar"
-              icon={GraduationCap}
-              colorClass="bg-[#C8E8D2] border-green-300"
-              iconBg="bg-[#5CB874]"
-            />
-            <StatCard
-              count="6"
-              label="Mapel Aktif"
-              subLabel="Total Mata Pelajaran"
-              icon={BookOpen}
-              colorClass="bg-[#BBD0E3] border-blue-300"
-              iconBg="bg-[#518CB8]"
-            />
-            <StatCard
-              count="12"
-              label="Kelas Aktif"
-              subLabel="Total Ruang Kelas"
-              icon={School}
-              colorClass="bg-[#DABEFF] border-purple-300"
-              iconBg="bg-[#A366FF]"
-            />
-          </div>
-
-          {/* Jadwal Hari Ini */}
-          <section className="bg-[#DFDFDF] rounded-2xl p-6 mb-8 border border-gray-300 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <CalendarCheck size={24} className="text-gray-700" />
-              <h3 className="font-bold text-xl text-gray-800">Jadwal Hari Ini</h3>
-              <span className="ml-2 bg-white/50 border border-gray-400 text-gray-700 text-[10px] font-bold px-3 py-1 rounded-full">
-                RABU, 21 MEI 2026
-              </span>
-            </div>
-
-            <div className="bg-white rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner">
-              <div className="bg-gray-50 p-6 rounded-full mb-4">
-                <CalendarRange size={64} className="text-gray-300" />
-              </div>
-              <p className="text-gray-400 font-bold text-lg">Tidak Ada Jadwal Untuk Hari Ini</p>
-            </div>
-          </section>
-
-          {/* Jadwal Minggu Ini */}
-          <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <CalendarRange size={24} className="text-gray-700" />
-                <h3 className="font-bold text-xl text-gray-800">Jadwal Minggu Ini</h3>
-              </div>
-              <button className="flex items-center gap-2 bg-white/50 border border-gray-400 hover:bg-white text-gray-700 text-xs font-bold px-4 py-2 rounded-full transition-all">
-                Lihat Semua Jadwal <ChevronRight size={14} />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-              <ScheduleCard
-                type="Pelajaran"
-                grade="Kelas 1"
-                day="Senin"
-                subject="Bahasa Inggris"
-                teacher="Andriano Darinding"
-                time="08:18 - 10:50"
-              />
-              <ScheduleCard
-                type="Pelajaran"
-                grade="Kelas 2"
-                day="Senin"
-                subject="Sastra Mesin"
-                teacher="Budi Setiawan"
-                time="08:18 - 10:50"
-              />
-              <ScheduleCard
-                type="Ujian"
-                grade="Kelas 3"
-                day="Senin"
-                date="23 Mei 2026"
-                subject="Sastra Mesin"
-                teacher="Budi Setiawan"
-                time="08:18 - 10:50"
-              />
-              <ScheduleCard
-                type="Ujian"
-                grade="Kelas 4"
-                day="Senin"
-                date="23 Mei 2026"
-                subject="Rekayasa Perangkat Lunak"
-                teacher="Eka Sepriadi"
-                time="08:18 - 10:50"
-              />
-            </div>
-          </section>
-
+      {/* Jadwal Hari Ini */}
+      <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <CalendarCheck size={24} className="text-gray-700" />
+          <h3 className="font-bold text-xl text-gray-800">Jadwal Hari Ini</h3>
+          <span className="ml-2 bg-white/50 border border-gray-400 text-gray-700 text-[10px] font-bold px-3 py-1 rounded-full">
+            RABU, 21 MEI 2026
+          </span>
         </div>
 
-        {/* Footer */}
-        <footer className="bg-[#DFDFDF] border-t border-gray-300 py-4 px-8 flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-          <p>© 2026 SD GMIM 12 MANADO. SEMUA HAK DILINDUNGI.</p>
-          <p>SISTEM PRESENSI DAN PENJADWALAN V1.0.0</p>
-        </footer>
-      </main>
-    </>
+        <div className="bg-white rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner">
+          <div className="bg-gray-50 p-6 rounded-full mb-4">
+            <CalendarRange size={64} className="text-gray-300" />
+          </div>
+          <p className="text-gray-400 font-bold text-lg">Tidak Ada Jadwal Untuk Hari Ini</p>
+        </div>
+      </section>
+
+      {/* Jadwal Minggu Ini */}
+      <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <CalendarRange size={24} className="text-gray-700" />
+            <h3 className="font-bold text-xl text-gray-800">Jadwal Minggu Ini</h3>
+          </div>
+          <button className="flex items-center gap-2 bg-white/50 border border-gray-400 hover:bg-white text-gray-700 text-xs font-bold px-4 py-2 rounded-full transition-all">
+            Lihat Semua Jadwal <ChevronRight size={14} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <ScheduleCard
+            type="Pelajaran"
+            grade="Kelas 1"
+            day="Senin"
+            subject="Bahasa Inggris"
+            teacher="Andriano Darinding"
+            time="08:18 - 10:50"
+          />
+          <ScheduleCard
+            type="Pelajaran"
+            grade="Kelas 2"
+            day="Senin"
+            subject="Sastra Mesin"
+            teacher="Budi Setiawan"
+            time="08:18 - 10:50"
+          />
+          <ScheduleCard
+            type="Ujian"
+            grade="Kelas 3"
+            day="Senin"
+            date="23 Mei 2026"
+            subject="Sastra Mesin"
+            teacher="Budi Setiawan"
+            time="08:18 - 10:50"
+          />
+          <ScheduleCard
+            type="Ujian"
+            grade="Kelas 4"
+            day="Senin"
+            date="23 Mei 2026"
+            subject="Rekayasa Perangkat Lunak"
+            teacher="Eka Sepriadi"
+            time="08:18 - 10:50"
+          />
+        </div>
+      </section>
+    </div>
   );
 };
 
