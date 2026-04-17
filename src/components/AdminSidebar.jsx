@@ -15,7 +15,7 @@ export default function AdminSidebar({ isSidebarOpen }) {
   return (
     <aside className={`h-screen bg-[#3B3128] text-white flex flex-col shadow-xl transition-all duration-300 ease-in-out relative ${isSidebarOpen ? "w-[280px]" : "w-[85px]"}`}>
       {/* Header */}
-      <div className="px-5 py-5 border-b border-white/10 h-[97px] overflow-hidden">
+      <div className={`${isSidebarOpen ? "px-5" : "px-3.5"} py-5 border-b border-white/10 h-[97px] overflow-hidden`}>
         <div className="flex items-center gap-4">
           {/* Logo */}
           <div className="w-14 h-14 flex items-center justify-center overflow-hidden shrink-0">
@@ -90,6 +90,6 @@ export default function AdminSidebar({ isSidebarOpen }) {
           )}
         </button>
       </div>
-    </aside>
+    </aside >
   );
 }
