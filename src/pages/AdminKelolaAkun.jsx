@@ -8,7 +8,7 @@ export default function AdminKelolaAkun() {
 
   return (
     <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[#ECEBEB] font-sans">
-      <div className="flex-1 overflow-y-auto p-8 pb-20">
+      <div className="flex-1 overflow-hidden p-8 pb-20">
 
         {/* Header */}
         <header className="bg-[#DFDFDF] rounded-2xl p-6 flex justify-between items-center mb-8 border border-gray-300 shadow-sm">
