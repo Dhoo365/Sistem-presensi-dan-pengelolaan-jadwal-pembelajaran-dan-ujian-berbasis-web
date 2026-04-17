@@ -9,6 +9,7 @@ import AdminKelolaKelas from './pages/AdminKelolaKelas'
 import AdminKelolaJadwal from './pages/AdminKelolaJadwal'
 import AdminKelolaAkun from "./pages/AdminKelolaAkun";
 import NotFoundPage from "./pages/NotFoundPage";
+import DashboardOrtu from './pages/DashboardOrtu'
 
 function App() {
 
@@ -16,6 +17,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/ortu" element={<DashboardOrtu />} />
 
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminBeranda />} />
