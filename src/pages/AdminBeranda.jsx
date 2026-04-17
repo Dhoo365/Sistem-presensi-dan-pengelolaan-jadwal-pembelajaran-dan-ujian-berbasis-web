@@ -123,7 +123,7 @@ const AdminBeranda = () => {
               label="Guru Aktif"
               subLabel="Total Tenaga Pengajar"
               icon={GraduationCap}
-              colorClass="bg-[#C8E8D2] border-green-200"
+              colorClass="bg-[#C8E8D2] border-green-300"
               iconBg="bg-[#5CB874]"
             />
             <StatCard
@@ -131,7 +131,7 @@ const AdminBeranda = () => {
               label="Mapel Aktif"
               subLabel="Total Mata Pelajaran"
               icon={BookOpen}
-              colorClass="bg-[#BBD0E3] border-blue-200"
+              colorClass="bg-[#BBD0E3] border-blue-300"
               iconBg="bg-[#518CB8]"
             />
             <StatCard
@@ -139,7 +139,7 @@ const AdminBeranda = () => {
               label="Kelas Aktif"
               subLabel="Total Ruang Kelas"
               icon={School}
-              colorClass="bg-[#DABEFF] border-purple-200"
+              colorClass="bg-[#DABEFF] border-purple-300"
               iconBg="bg-[#A366FF]"
             />
           </div>
