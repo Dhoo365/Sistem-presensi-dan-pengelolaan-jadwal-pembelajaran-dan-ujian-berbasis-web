@@ -111,8 +111,10 @@ export default function AdminKelolaGuru() {
             <Plus size={16} />
             Tambah Guru
           </button>
+
+          
         </div>
       </div>
     </div>
   );
-}
+}
