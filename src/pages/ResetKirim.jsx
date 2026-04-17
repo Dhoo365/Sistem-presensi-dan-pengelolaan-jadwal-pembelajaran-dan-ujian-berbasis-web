@@ -39,7 +39,7 @@ export default function ResetKirim() {
         <span></span>
       </div>
 
-      <Link to="/" className="rp-back">
+      <Link to="/login" className="rp-back">
         <i className="ti ti-arrow-left"></i>
         kembali ke halaman login
       </Link>

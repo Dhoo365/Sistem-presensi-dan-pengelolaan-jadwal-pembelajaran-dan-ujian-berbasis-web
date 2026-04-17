@@ -4,7 +4,7 @@ import logo from "../assets/foto/logo.png";
 export default function Reset() {
     const handleSubmit = (e) => {
         e.preventDefault();
-        alert("Login berhasil (dummy)");
+        alert("Reset Berhasil (dummy)");
     };
 
     return (
