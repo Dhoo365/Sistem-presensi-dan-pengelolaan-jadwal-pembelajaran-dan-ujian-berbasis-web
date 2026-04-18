@@ -127,11 +127,13 @@ const AdminBeranda = () => {
           </span>
         </div>
 
-        <div className="bg-white rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner">
+        <div className="bg-white h-24 min-h-0 md:min-h-24 rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner space-y-6 ">
           <div className="bg-gray-50 p-6 rounded-full mb-4">
-            <CalendarRange size={64} className="text-gray-300" />
+            <CalendarRange size={34} className="text-gray-300" />
           </div>
-          <p className="text-gray-400 font-bold text-lg">Tidak Ada Jadwal Untuk Hari Ini</p>
+          <div>
+            <p className="text-gray-400 font-bold text-base">Tidak Ada Jadwal Untuk Hari Ini</p>
+          </div>
         </div>
       </section>
 
@@ -184,6 +186,12 @@ const AdminBeranda = () => {
           />
         </div>
       </section>
+
+      {/* FOOTER */}
+      <footer className="bg-[#DFDFDF] border-t border-gray-300 py-4 px-8 flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-widest shrink-0">
+        <p>© 2026 SD GMIM 12 MANADO. SEMUA HAK DILINDUNGI.</p>
+        <p>SISTEM PRESENSI DAN PENJADWALAN V1.0.0</p>
+      </footer>
     </div>
   );
 };
