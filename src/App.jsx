@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetKirim";
+import UpdatePassword from "./pages/ResetUbah";
 import AdminBeranda from "./pages/AdminBeranda";
 import AdminLayout from './layouts/AdminLayout'
 import AdminKelolaMurid from "./pages/AdminKelolaMurid";
@@ -16,6 +17,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/update-password" element={<UpdatePassword />} />
 
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminBeranda />} />
