@@ -11,6 +11,7 @@ import AdminKelolaAkun from "./pages/admin/AdminKelolaAkun";
 import NotFoundPage from "./pages/login/NotFoundPage";
 import DashboardOrtu from './pages/ortu/DashboardOrtu'
 import LayoutOrtu from './layouts/LayoutOrtu'
+import AdminKelolaMapel from "./pages/admin/AdminKelolaMapel";
 
 
 function App() {
@@ -19,8 +20,8 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/ortu" element={<LayoutOrtu />}> 
-      <Route index element={<DashboardOrtu />}/>
+      <Route path="/ortu" element={<LayoutOrtu />}>
+        <Route index element={<DashboardOrtu />} />
       </Route>
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminBeranda />} />
@@ -29,6 +30,7 @@ function App() {
         <Route path="kelas" element={<AdminKelolaKelas />} />
         <Route path="jadwal" element={<AdminKelolaJadwal />} />
         <Route path="akun" element={<AdminKelolaAkun />} />
+        <Route path="mapel" element={<AdminKelolaMapel />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
