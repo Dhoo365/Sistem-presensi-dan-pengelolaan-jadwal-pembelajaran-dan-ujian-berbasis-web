@@ -12,6 +12,7 @@ import NotFoundPage from "./pages/login/NotFoundPage";
 import DashboardOrtu from './pages/ortu/DashboardOrtu'
 import LayoutOrtu from './layouts/LayoutOrtu'
 import Reset from './pages/login/Reset'
+import AdminKelolaMapel from "./pages/admin/AdminKelolaMapel";
 
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
         <Route path="kelas" element={<AdminKelolaKelas />} />
         <Route path="jadwal" element={<AdminKelolaJadwal />} />
         <Route path="akun" element={<AdminKelolaAkun />} />
+        <Route path="mapel" element={<AdminKelolaMapel />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
