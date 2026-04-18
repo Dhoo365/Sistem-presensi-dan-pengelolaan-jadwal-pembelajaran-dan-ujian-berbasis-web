@@ -216,11 +216,11 @@ export default function AdminKelolaAkun() {
                       </>
                     )}
 
-                    <th className="px-6 py-4 font-bold text-gray-500 uppercase text-xs">
+                    <th className="px-6 py-4 w-[170px] text-center font-bold text-gray-500 uppercase text-xs">
                       Status
                     </th>
 
-                    <th className="px-6 py-4 font-bold text-gray-500 uppercase text-xs text-center">
+                    <th className="px-6 py-4 w-[420px] text-center font-bold text-gray-500 uppercase text-xs">
                       Aksi
                     </th>
                   </tr>
@@ -252,35 +252,35 @@ export default function AdminKelolaAkun() {
 
                       {/* STATUS */}
                       <td className="px-6 py-4">
-                        <span
-                          className={`text-[11px] font-bold px-3 py-1.5 rounded-full border ${
-                            item.aktif
-                              ? "bg-[#E4F5E8] text-[#60B873] border-[#60B873]"
-                              : "bg-[#FCEAE9] text-[#E16766] border-[#E16766]"
-                          }`}
-                        >
-                          {item.aktif
-                            ? "AKTIF"
-                            : "NONAKTIF"}
-                        </span>
+                        <div className="w-[120px]">
+                          <span
+                            className={`h-8 min-w-[120px] inline-flex items-center justify-center rounded-full border text-[11px] font-bold px-3 whitespace-nowrap ${
+                              item.aktif
+                                ? "bg-[#E4F5E8] text-[#60B873] border-[#60B873]"
+                                : "bg-[#FCEAE9] text-[#E16766] border-[#E16766]"
+                            }`}
+                          >
+                            {item.aktif ? "AKTIF" : "NONAKTIF"}
+                          </span>
+                        </div>
                       </td>
 
                       {/* AKSI */}
                       <td className="px-6 py-4">
-                        <div className="flex justify-center gap-2">
+                        <div className="w-[360px] mx-auto grid grid-cols-3 gap-2 ">
 
                           <button className="bg-[#E8F0FE] text-[#1A73E8] border border-[#1A73E8] hover:bg-blue-100 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
                             <Pencil size={14} />
                             Edit Email
                           </button>
 
-                          <button className="bg-[#ECECEC] text-gray-700 border border-gray-300 hover:bg-gray-100 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
+                          <button className="bg-[#ECECEC] items-center justify-center text-gray-700 border border-gray-300 hover:bg-gray-100 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
                             <KeyRound size={14} />
                             Reset
                           </button>
 
                           <button
-                            className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors border ${
+                            className={`px-3 py-2 rounded-lg text-xs font-bold items-center justify-center flex items-center gap-1.5 transition-colors border ${
                               item.aktif
                                 ? "bg-[#FCEAE9] text-[#E16766] border-[#E16766]"
                                 : "bg-[#E4F5E8] text-[#60B873] border-[#60B873]"
