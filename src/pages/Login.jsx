@@ -41,7 +41,7 @@ export default function Login() {
 
     // Login berhasil
     console.log(data);
-    navigate("/dashboard");
+    navigate("/admin");
   };
 
   return (
