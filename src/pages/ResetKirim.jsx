@@ -70,7 +70,7 @@ export default function ResetKirim() {
 
           {/* Back to Login Link */}
           <Link
-            to="/"
+            to="/login"
             className="flex items-center gap-2 text-sm text-gray-600 hover:text-[#4A342B] font-medium italic transition-colors"
           >
             <ArrowLeft size={16} />
