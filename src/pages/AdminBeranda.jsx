@@ -127,7 +127,7 @@ const AdminBeranda = () => {
           </span>
         </div>
 
-        <div className="bg-white h-24 min-h-0 md:min-h-24 rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner space-y-6 ">
+        <div className="bg-white h-24 min-h-0 md:min-h-24 rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner space-y-6jj ">
           <div className="bg-gray-50 p-6 rounded-full mb-4">
             <CalendarRange size={34} className="text-gray-300" />
           </div>
