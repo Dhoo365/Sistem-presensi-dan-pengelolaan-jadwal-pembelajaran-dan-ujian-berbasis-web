@@ -1,5 +1,5 @@
-import bg from "../assets/foto/background.png";
-import logo from "../assets/foto/logo.png";
+import bg from "../../assets/foto/background.png";
+import logo from "../../assets/foto/logo.png";
 
 export default function Reset() {
     const handleSubmit = (e) => {

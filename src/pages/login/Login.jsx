@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 
 // Pastikan path import ini sesuai dengan struktur folder Anda
-import bg from "../assets/foto/background.png";
-import logo from "../assets/foto/logo.png";
+import bg from "../../assets/foto/background.png";
+import logo from "../../assets/foto/logo.png";
 
 export default function Login() {
   // State untuk visibilitas password
