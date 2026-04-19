@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Lock, Mail, ArrowLeft } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import AuthLayout from "../layouts/AuthLayout";
+import AuthLayout from "../../layouts/AuthLayout";
 
 // Pastikan path import ini sesuai dengan struktur folder Anda
 import bg from "../../assets/foto/background.png";
