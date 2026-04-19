@@ -42,39 +42,393 @@ export default function AdminKelolaMurid() {
     { nis: 'M005', nama: 'Dio', kelas: 'Kelas 3', status: 'Aktif', tanggal: 'Senin, 23 Mei 2026' },
   ];
 
+  const [tahunBaru, setTahunBaru] = React.useState("");
+  const [ganjilMulai, setGanjilMulai] = React.useState("");
+  const [ganjilSelesai, setGanjilSelesai] = React.useState("");
+  const [genapMulai, setGenapMulai] = React.useState("");
+  const [genapSelesai, setGenapSelesai] = React.useState("");
+
   return (
     <div className="space-y-8">
-      {/* Section 1: Manajemen Tahun Ajaran */}
-      <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
-        <div className="flex items-center gap-3 mb-2">
-          <CalendarIcon size={24} className="text-gray-700" />
-          <h3 className="font-bold text-xl text-gray-800">Manajemen Tahun Ajaran</h3>
-        </div>
-        <p className="text-sm text-gray-600 mb-5 ml-9">Pengaturan tahun ajaran dan manajemen kelas murid</p>
+      {/* Section 1 : Manajemen Tahun Ajaran */}
+    <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
+      {/* Header */}
+      <div className="flex items-start gap-3 mb-6">
+        <CalendarIcon size={24} className="text-gray-700 mt-1" />
 
-        <div className="flex items-center gap-4 ml-9">
-          <div className="bg-white px-5 py-3 rounded-xl flex flex-col justify-center border border-gray-200 shadow-sm min-w-[200px]">
-            <span className="text-xs text-gray-500 mb-1">Tahun Ajaran Aktif</span>
-            <div className="flex items-center gap-3">
-              <span className="font-black text-2xl text-gray-800">2025-2026</span>
-              <span className="bg-[#E4F5E8] text-[#60B873] text-[10px] font-bold px-3 py-1 rounded-full border border-[#60B873]">Aktif</span>
+        <div>
+          <h3 className="text-xl font-bold text-gray-800">
+            Manajemen Tahun Ajaran
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Atur pergantian tahun ajaran dan periode semester dengan aman.
+          </p>
+        </div>
+      </div>
+
+      {/* Main Layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        {/* LEFT CONTENT */}
+        <div className="xl:col-span-2 space-y-6">
+
+          {/* Tahun Aktif + Tahun Baru */}
+          <div className="grid md:grid-cols-2 gap-5">
+
+            {/* Tahun Aktif */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+              <p className="text-sm text-gray-500 mb-2">
+                Tahun Ajaran Aktif
+              </p>
+
+              <div className="flex items-center gap-3">
+                <h2 className="text-4xl font-black text-gray-800 tracking-tight">
+                  2025-2026
+                </h2>
+
+                <span className="text-xs font-bold px-3 py-1 rounded-full border border-[#60B873] text-[#60B873] bg-[#E4F5E8]">
+                  Aktif
+                </span>
+              </div>
+            </div>
+
+            {/* Tahun Baru */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Tahun Ajaran Baru
+              </label>
+
+              <div className="flex items-center bg-[#F8F8F8] border border-gray-300 rounded-xl px-4 py-3">
+                <CalendarIcon size={18} className="text-gray-500 mr-3" />
+
+                                <select
+                  value={tahunBaru}
+                  onChange={(e) => setTahunBaru(e.target.value)}
+                  className="w-full bg-transparent outline-none text-sm font-semibold text-gray-800"
+                >
+                  <option value="">Pilih Tahun Ajaran</option>
+                  <option value="2026-2027">2026-2027</option>
+                  <option value="2027-2028">2027-2028</option>
+                  <option value="2028-2029">2028-2029</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center bg-[#ECEBEB] border border-gray-300 rounded-lg px-4 py-3 h-full">
-            <CalendarIcon size={16} className="text-gray-500 mr-2" />
-            <select className="bg-transparent text-sm font-bold text-gray-700 outline-none pr-4">
-              <option>2026-2027</option>
-              <option>2027-2028</option>
-            </select>
+          {/* Semester */}
+          <div className="grid md:grid-cols-2 gap-5">
+
+            {/* Semester Ganjil */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-bold text-gray-800">
+                  Semester Ganjil
+                </h4>
+
+                <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">
+                  Semester 1
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">
+                    Tanggal Mulai
+                  </label>
+                    <input
+                      type="date"
+                      value={ganjilMulai}
+                      onChange={(e) => setGanjilMulai(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#715445]/20"
+                    />
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">
+                    Tanggal Selesai
+                  </label>
+                    <input
+                      type="date"
+                      value={ganjilSelesai}
+                      onChange={(e) => setGanjilSelesai(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#715445]/20"
+                    />
+                </div>
+              </div>
+            </div>
+
+            {/* Semester Genap */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-bold text-gray-800">
+                  Semester Genap
+                </h4>
+
+                <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">
+                  Semester 2
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">
+                    Tanggal Mulai
+                  </label>
+                    <input
+                      type="date"
+                      value={genapMulai}
+                      onChange={(e) => setGenapMulai(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#715445]/20"
+                    />
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">
+                    Tanggal Selesai
+                  </label>
+                    <input
+                      type="date"
+                      value={genapSelesai}
+                      onChange={(e) => setGenapSelesai(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#715445]/20"
+                    />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {/* RIGHT PANEL */}
+<div>
+  <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm h-full flex flex-col">
+
+    <h4 className="font-bold text-gray-800 mb-5">
+      Ringkasan Proses
+    </h4>
+
+    {(() => {
+      const tahunAktif = "2025-2026";
+      const aktifAwal = 2025;
+
+      const parseDate = (val) => {
+        if (!val) return null;
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? null : d;
+      };
+
+      const gMulai = parseDate(ganjilMulai);
+      const gSelesai = parseDate(ganjilSelesai);
+      const eMulai = parseDate(genapMulai);
+      const eSelesai = parseDate(genapSelesai);
+
+      let statusText = "";
+      let statusColor = "";
+
+      if (!tahunBaru) {
+        statusText = "Pilih Tahun Ajaran Baru";
+        statusColor = "text-red-500";
+      } else {
+        const baruAwal = parseInt(tahunBaru.split("-")[0]);
+        const baruAkhir = parseInt(tahunBaru.split("-")[1]);
+
+        const bulanGMulai = gMulai ? gMulai.getMonth() + 1 : 0;
+        const bulanGSelesai = gSelesai ? gSelesai.getMonth() + 1 : 0;
+        const bulanEMulai = eMulai ? eMulai.getMonth() + 1 : 0;
+        const bulanESelesai = eSelesai ? eSelesai.getMonth() + 1 : 0;
+
+        const durasiGanjil =
+          gMulai && gSelesai
+            ? Math.floor((gSelesai - gMulai) / (1000 * 60 * 60 * 24))
+            : 0;
+
+        const durasiGenap =
+          eMulai && eSelesai
+            ? Math.floor((eSelesai - eMulai) / (1000 * 60 * 60 * 24))
+            : 0;
+
+        const jedaSemester =
+          gSelesai && eMulai
+            ? Math.floor((eMulai - gSelesai) / (1000 * 60 * 60 * 24))
+            : 0;
+
+        /* =========================
+           VALIDASI TAHUN AJARAN
+        ========================= */
+        if (
+          isNaN(baruAwal) ||
+          isNaN(baruAkhir) ||
+          baruAwal <= aktifAwal ||
+          baruAkhir !== baruAwal + 1
+        ) {
+          statusText = "Tahun Ajaran Tidak Valid";
+          statusColor = "text-red-500";
+        }
+
+        /* =========================
+           FIELD BELUM LENGKAP
+        ========================= */
+        else if (
+          !ganjilMulai ||
+          !ganjilSelesai ||
+          !genapMulai ||
+          !genapSelesai
+        ) {
+          statusText = "Lengkapi Periode Semester";
+          statusColor = "text-orange-500";
+        }
+
+        /* =========================
+           VALIDASI DASAR
+        ========================= */
+        else if (!gMulai || !gSelesai) {
+          statusText = "Tanggal Semester Ganjil Salah";
+          statusColor = "text-red-500";
+        }
+
+        else if (!eMulai || !eSelesai) {
+          statusText = "Tanggal Semester Genap Salah";
+          statusColor = "text-red-500";
+        }
+
+        else if (gMulai >= gSelesai) {
+          statusText = "Rentang Semester Ganjil Tidak Valid";
+          statusColor = "text-red-500";
+        }
+
+        else if (eMulai >= eSelesai) {
+          statusText = "Rentang Semester Genap Tidak Valid";
+          statusColor = "text-red-500";
+        }
+
+        else if (eMulai <= gSelesai) {
+          statusText = "Jadwal Semester Bertabrakan";
+          statusColor = "text-red-500";
+        }
+
+        /* =========================
+           TAHUN HARUS SESUAI
+        ========================= */
+        else if (
+          gMulai.getFullYear() !== baruAwal ||
+          gSelesai.getFullYear() !== baruAwal
+        ) {
+          statusText = `Semester Ganjil Harus Tahun ${baruAwal}`;
+          statusColor = "text-red-500";
+        }
+
+        else if (
+          eMulai.getFullYear() !== baruAkhir ||
+          eSelesai.getFullYear() !== baruAkhir
+        ) {
+          statusText = `Semester Genap Harus Tahun ${baruAkhir}`;
+          statusColor = "text-red-500";
+        }
+
+        /* =========================
+           VALIDASI SEKOLAH SWASTA
+           FLEKSIBEL TAPI MASUK AKAL
+        ========================= */
+
+        /* Ganjil mulai Mei-Oktober */
+        else if (bulanGMulai < 5 || bulanGMulai > 10) {
+          statusText = "Awal Semester Ganjil Tidak Umum";
+          statusColor = "text-red-500";
+        }
+
+        /* Ganjil selesai Nov-Feb */
+        else if (![11, 12, 1, 2].includes(bulanGSelesai)) {
+          statusText = "Akhir Semester Ganjil Perlu Dicek";
+          statusColor = "text-red-500";
+        }
+
+        /* Genap mulai Jan-Apr */
+        else if (![1, 2, 3, 4].includes(bulanEMulai)) {
+          statusText = "Awal Semester Genap Tidak Umum";
+          statusColor = "text-red-500";
+        }
+
+        /* Genap selesai Mei-Agustus */
+        else if (![5, 6, 7, 8].includes(bulanESelesai)) {
+          statusText = "Akhir Semester Genap Perlu Dicek";
+          statusColor = "text-red-500";
+        }
+
+        /* Durasi semester */
+        else if (durasiGanjil < 70 || durasiGanjil > 230) {
+          statusText = "Durasi Semester Ganjil Tidak Logis";
+          statusColor = "text-red-500";
+        }
+
+        else if (durasiGenap < 70 || durasiGenap > 230) {
+          statusText = "Durasi Semester Genap Tidak Logis";
+          statusColor = "text-red-500";
+        }
+
+        /* Jeda antar semester */
+        else if (jedaSemester > 60) {
+          statusText = "Jeda Antar Semester Terlalu Lama";
+          statusColor = "text-orange-500";
+        }
+
+        else {
+          statusText = "Data Valid & Siap Diproses";
+          statusColor = "text-green-600";
+        }
+      }
+
+      const tombolDisable =
+        statusText !== "Data Valid & Siap Diproses";
+
+      return (
+        <>
+          <div className="space-y-4 text-sm">
+
+            <div className="flex justify-between border-b border-gray-100 pb-3">
+              <span className="text-gray-500">Tahun Aktif</span>
+              <span className="font-semibold text-gray-800">
+                {tahunAktif}
+              </span>
+            </div>
+
+            <div className="flex justify-between border-b border-gray-100 pb-3">
+              <span className="text-gray-500">Tahun Baru</span>
+              <span className="font-semibold text-gray-800">
+                {tahunBaru || "-"}
+              </span>
+            </div>
+
+            <div className="flex justify-between pb-1">
+              <span className="text-gray-500">Status</span>
+              <span className={`font-semibold ${statusColor}`}>
+                {statusText}
+              </span>
+            </div>
           </div>
 
-          <button className="bg-[#715445] hover:bg-[#5E4236] text-white text-sm font-bold px-6 py-3 rounded-lg flex items-center gap-2 transition-colors shadow-sm">
+          <div className="mt-5 bg-[#F8F5F3] rounded-xl p-4 text-xs text-gray-600 leading-relaxed">
+            Sistem akan menutup tahun ajaran aktif dan menjadikan
+            tahun ajaran baru aktif setelah seluruh data valid.
+          </div>
+
+          <button
+            disabled={tombolDisable}
+            className={`mt-auto w-full py-3 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 mt-6 ${
+              tombolDisable
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-[#715445] hover:bg-[#5E4236] text-white"
+            }`}
+          >
             <Plus size={16} />
-            Tutup Tahun Ajaran & Buat Tahun Baru
+            Tutup Tahun Ajaran & Buat Baru
           </button>
-        </div>
-      </section>
+        </>
+      );
+    })()}
+  </div>
+</div>
+
+      </div>
+    </section>
 
       {/* Section 2: Upload Murid Dari CSV */}
       <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
