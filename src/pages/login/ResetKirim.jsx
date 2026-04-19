@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Lock, Mail, ArrowLeft } from "lucide-react";
-<<<<<<< HEAD:src/pages/ResetKirim.jsx
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import AuthLayout from "../layouts/AuthLayout";
-=======
 
 // Pastikan path import ini sesuai dengan struktur folder Anda
 import bg from "../../assets/foto/background.png";
 import logo from "../../assets/foto/background.png";
->>>>>>> 49b819f747c8ff6166ef7eb581f8e8e03d090a61:src/pages/login/ResetKirim.jsx
 
 export default function ResetKirim() {
   const [email, setEmail] = useState("");

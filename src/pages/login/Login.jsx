@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
-<<<<<<< HEAD:src/pages/Login.jsx
 import { supabase } from "../lib/supabase";
 import AuthLayout from "../layouts/AuthLayout";
-=======
 
 // Pastikan path import ini sesuai dengan struktur folder Anda
 import bg from "../../assets/foto/background.png";
 import logo from "../../assets/foto/logo.png";
->>>>>>> 49b819f747c8ff6166ef7eb581f8e8e03d090a61:src/pages/login/Login.jsx
 
 export default function Login() {
   const navigate = useNavigate();

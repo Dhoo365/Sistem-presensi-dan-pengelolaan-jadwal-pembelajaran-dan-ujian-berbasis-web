@@ -1,8 +1,8 @@
 import { Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import ResetPassword from "./pages/ResetKirim";
+import Login from "./pages/login/Login";
+import ResetPassword from "./pages/login/ResetKirim";
 import UpdatePassword from "./pages/ResetUbah";
-import AdminBeranda from "./pages/AdminBeranda";
+import AdminBeranda from "./pages/admin/AdminBeranda";
 import AdminLayout from './layouts/AdminLayout'
 import AdminKelolaMurid from "./pages/admin/AdminKelolaMurid";
 import AdminKelolaGuru from './pages/admin/AdminKelolaGuru'
