@@ -4,7 +4,7 @@ import { Lock, Mail, ArrowLeft } from "lucide-react";
 
 // Pastikan path import ini sesuai dengan struktur folder Anda
 import bg from "../../assets/foto/background.png";
-import logo from "../../assets/foto/background.png";
+import logo from "../../assets/foto/logo.png";
 
 export default function ResetKirim() {
   const handleSubmit = (e) => {

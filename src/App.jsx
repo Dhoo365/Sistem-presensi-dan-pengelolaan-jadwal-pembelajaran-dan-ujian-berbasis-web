@@ -13,7 +13,8 @@ import DashboardOrtu from './pages/ortu/DashboardOrtu'
 import LayoutOrtu from './layouts/LayoutOrtu'
 import Reset from './pages/login/Reset'
 import AdminKelolaMapel from "./pages/admin/AdminKelolaMapel";
-
+import LihatPresensi from "./pages/ortu/LihatPresensi"
+import JadwalOrtu from "./pages/ortu/JadwalOrtu"
 
 function App() {
 
@@ -23,7 +24,9 @@ function App() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path= "/reset" element= {<Reset />}></Route>
       <Route path="/ortu" element={<LayoutOrtu />}> 
-      <Route index element={<DashboardOrtu />}/>
+        <Route index element={<DashboardOrtu />}/>
+        <Route path="lihat-presensi" element={<LihatPresensi />}/>
+        <Route path="lihat-jadwal" element={<JadwalOrtu />}/>
       </Route>
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminBeranda />} />
