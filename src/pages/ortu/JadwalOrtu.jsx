@@ -69,7 +69,7 @@ const JadwalMingguContent = () => {
       {/* CONTAINER */}
       <div className="bg-gray-200 rounded-2xl shadow-inner p-4">
 
-        {/* 🔥 SCROLL AREA */}
+        {/* SCROLL AREA */}
         <div
           className="
             flex gap-4
