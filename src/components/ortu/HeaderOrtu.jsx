@@ -7,12 +7,11 @@ export default function AdminHeader({ isSidebarOpen, setIsSidebarOpen }) {
   // Mapping paths to titles and descriptions
   const pageMeta = {
     "/ortu": { title: "Beranda", desc: "Selamat Datang di Panel Orang Tua" },
-    "/ortu/presensi": { title: "Lihat Presensi", desc: "Lihat Presensi Siswa" },
-    "/ortu/jadwal": { title: "Lihat Jadwal", desc: "Lihat Jadwal Siswa" },
-    "/ortu/jadwal-mingguan": { title: "Kelola Mapel", desc: "Lihat Jadwal Mingguan Siswa" },
+    "/ortu/lihat-presensi": { title: "Lihat Presensi", desc: "Lihat Presensi Siswa" },
+    "/ortu/lihat-jadwal": { title: "Lihat Jadwal", desc: "Lihat Jadwal Siswa" },
   };
 
-  const currentMeta = pageMeta[location.pathname] || { title: "Admin Panel", desc: "Management Sistem" };
+  const currentMeta = pageMeta[location.pathname] || { title: "Panel Orang Tua", desc: "Management Sistem" };
 
   return (
     <header className="bg-[#DFDFDF] rounded-2xl p-6 flex justify-between items-center border border-gray-300 shadow-sm mb-8">
@@ -34,7 +33,7 @@ export default function AdminHeader({ isSidebarOpen, setIsSidebarOpen }) {
           <User size={24} />
         </div>
         <div>
-          <p className="font-bold text-gray-800 text-lg leading-none">Admin</p>
+          <p className="font-bold text-gray-800 text-lg leading-none">Orang Tua</p>
           <p className="text-sm text-gray-500 font-medium mt-1">Asep Yanto Kurnawan</p>
         </div>
       </div>

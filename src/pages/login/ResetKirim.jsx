@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Lock, Mail, ArrowLeft } from "lucide-react";
 import bg from "../../assets/foto/background.png";
-import logo from "../../assets/foto/background.png";
+import logo from "../../assets/foto/logo.png";
 
 export default function ResetKirim() {
   const handleSubmit = (e) => {
