@@ -4,7 +4,7 @@ import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import AuthLayout from "../../layouts/AuthLayout";
 
-// Pastikan path import ini sesuai dengan struktur folder Anda
+// Pastikan path sesuai project kamu
 import bg from "../../assets/foto/background.png";
 import logo from "../../assets/foto/logo.png";
 
@@ -19,27 +19,75 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const { error } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Login ke Supabase Auth
+      const { data, error } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-    setLoading(false);
+      if (error) {
+        alert(error.message);
+        return;
+      }
 
-    if (error) {
-      alert(error.message);
-      return;
+      const userId = data.user.id;
+
+      // Simpan token JWT untuk digunakan oleh axios ke backend
+      localStorage.setItem("token", data.session.access_token);
+
+      // Ambil profile user
+      const {
+        data: profile,
+        error: profileError,
+      } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      if (profileError || !profile) {
+        alert("Profil user tidak ditemukan");
+        return;
+      }
+
+      // Cek status akun
+      if (profile.status !== "aktif") {
+        alert("Akun Anda tidak aktif");
+        return;
+      }
+
+      // Simpan data penting
+      localStorage.setItem("role", profile.role);
+      localStorage.setItem("nama", profile.nama || "");
+      localStorage.setItem("user_id", profile.id);
+
+      // Redirect sesuai role
+      if (profile.role === "admin") {
+        navigate("/admin");
+      } else if (profile.role === "guru") {
+        navigate("/guru");
+      } else if (
+        profile.role === "ortu" ||
+        profile.role === "orangtua"
+      ) {
+        navigate("/ortu");
+      } else {
+        alert("Role akun tidak dikenali");
+      }
+
+    } catch (err) {
+      alert("Terjadi kesalahan saat login");
+    } finally {
+      setLoading(false);
     }
-
-    navigate("/admin");
   };
 
   return (
     <AuthLayout>
-
       <h1 className="text-4xl font-black text-[#4A342B] mb-1">
         Selamat Datang!
       </h1>
@@ -54,7 +102,6 @@ export default function Login() {
         onSubmit={handleSubmit}
         className="flex flex-col gap-5"
       >
-
         {/* Email */}
         <div className="text-left">
           <label className="block text-[#4A342B] font-bold italic text-sm mb-2">
@@ -62,14 +109,15 @@ export default function Login() {
           </label>
 
           <div className="flex items-center border border-gray-400 focus-within:border-[#4A342B] rounded-lg px-4 py-3">
-
             <User size={18} className="text-gray-600" />
 
             <input
               type="email"
               required
               value={email}
-              onChange={(e)=>setEmail(e.target.value)}
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
               placeholder="Masukkan Email Anda"
               className="w-full ml-3 bg-transparent outline-none text-sm"
             />
@@ -83,14 +131,19 @@ export default function Login() {
           </label>
 
           <div className="flex items-center border border-gray-400 focus-within:border-[#4A342B] rounded-lg px-4 py-3">
-
             <Lock size={18} className="text-gray-600" />
 
             <input
-              type={showPassword ? "text" : "password"}
+              type={
+                showPassword
+                  ? "text"
+                  : "password"
+              }
               required
               value={password}
-              onChange={(e)=>setPassword(e.target.value)}
+              onChange={(e) =>
+                setPassword(e.target.value)
+              }
               placeholder="Masukkan Password Anda"
               className="w-full ml-3 bg-transparent outline-none text-sm"
             />
@@ -108,20 +161,21 @@ export default function Login() {
                 <EyeOff size={18} />
               )}
             </button>
-
           </div>
         </div>
 
-        {/* Button */}
+        {/* Tombol Login */}
         <button
           type="submit"
           disabled={loading}
           className="w-full bg-[#4A342B] hover:bg-[#36251E] text-white font-bold text-lg py-3 rounded-xl transition-all duration-300"
         >
-          {loading ? "Memproses..." : "Masuk"}
+          {loading
+            ? "Memproses..."
+            : "Masuk"}
         </button>
 
-        {/* Forgot */}
+        {/* Forgot Password */}
         <div className="text-center mt-2">
           <Link
             to="/reset-password"
@@ -130,9 +184,7 @@ export default function Login() {
             Lupa Password?
           </Link>
         </div>
-
       </form>
-
     </AuthLayout>
   );
 }

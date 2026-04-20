@@ -1,14 +1,39 @@
-import React from 'react';
-import { Menu, User, Search, ChevronDown, Plus, Pencil, Trash2, CalendarDays } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, ChevronDown, Plus, Pencil, Trash2, CalendarDays } from 'lucide-react';
+import api from '../../lib/axios';
 
 export default function AdminKelolaJadwal() {
-  const jadwalData = [
-    { id: 1, hari: 'Senin', rentangWaktu: '08:15 - 09:45', kelas: '1a', mapel: 'Bahasa Indonesia', guru: 'Budi Setiawan' },
-    { id: 2, hari: 'Senin', rentangWaktu: '09:45 - 11:15', kelas: '1a', mapel: 'Pendidikan Agama', guru: 'Andriano Darinding' },
-    { id: 3, hari: 'Selasa', rentangWaktu: '08:15 - 09:45', kelas: '2b', mapel: 'Matematika', guru: 'Siti Aminah' },
-    { id: 4, hari: 'Selasa', rentangWaktu: '10:00 - 11:30', kelas: '3', mapel: 'Ilmu Pengetahuan Alam', guru: 'Eka Sepriadi' },
-    { id: 5, hari: 'Rabu', rentangWaktu: '08:15 - 09:45', kelas: '4', mapel: 'Bahasa Inggris', guru: 'Rina Melati' },
-  ];
+  const [jadwalData, setJadwalData] = useState([]);
+  const [kelasList, setKelasList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  const fetchJadwal = () => {
+    setLoading(true);
+    api.get('/admin/jadwal')
+      .then((res) => setJadwalData(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchJadwal();
+    api.get('/admin/kelas').then((res) => setKelasList(res.data)).catch(() => {});
+  }, []);
+
+  const handleHapus = async (id) => {
+    if (!confirm('Hapus jadwal ini?')) return;
+    try {
+      await api.delete(`/admin/jadwal/${id}`);
+      fetchJadwal();
+    } catch {
+      alert('Gagal menghapus jadwal');
+    }
+  };
+
+  const filtered = jadwalData.filter((j) =>
+    `${j.mapel} ${j.guru} ${j.kelas}`.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="bg-white rounded-2xl border border-gray-300 shadow-sm overflow-hidden flex flex-col">
@@ -19,6 +44,8 @@ export default function AdminKelolaJadwal() {
             <input
               type="text"
               placeholder="Cari mapel atau nama guru..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-gray-400 text-sm outline-none focus:border-gray-500 bg-white"
             />
             <Search size={18} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500" />
@@ -57,7 +84,9 @@ export default function AdminKelolaJadwal() {
             </tr>
           </thead>
           <tbody className="text-gray-800">
-            {jadwalData.map((jadwal, index) => (
+            {loading ? (
+              <tr><td colSpan="7" className="py-10 text-center text-gray-400">Memuat data...</td></tr>
+            ) : filtered.map((jadwal, index) => (
               <tr key={jadwal.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 border-r border-gray-200 text-center font-medium">{index + 1}</td>
                 <td className="px-6 py-4 border-r border-gray-200 font-bold text-gray-900">{jadwal.hari}</td>
@@ -71,14 +100,14 @@ export default function AdminKelolaJadwal() {
                   <button className="bg-[#E8F0FE] text-[#1A73E8] border border-[#1A73E8] hover:bg-blue-100 p-2 rounded-lg transition-colors" title="Edit Jadwal">
                     <Pencil size={16} />
                   </button>
-                  <button className="bg-[#FCEAE9] text-[#E16766] border border-[#E16766] hover:bg-red-50 p-2 rounded-lg transition-colors" title="Hapus Jadwal">
+                  <button onClick={() => handleHapus(jadwal.id)} className="bg-[#FCEAE9] text-[#E16766] border border-[#E16766] hover:bg-red-50 p-2 rounded-lg transition-colors" title="Hapus Jadwal">
                     <Trash2 size={16} />
                   </button>
                 </td>
               </tr>
             ))}
 
-            {jadwalData.length === 0 && (
+            {!loading && filtered.length === 0 && (
               <tr>
                 <td colSpan="7" className="py-12 text-center text-gray-500">
                   <CalendarDays size={48} className="mx-auto text-gray-300 mb-4" />
@@ -88,7 +117,7 @@ export default function AdminKelolaJadwal() {
             )}
           </tbody>
         </table>
-      </div>        
+      </div>
       {/* FOOTER */}
       <footer className="bg-[#DFDFDF] border-t border-gray-300 py-4 px-8 flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-widest shrink-0">
         <p>© 2026 SD GMIM 12 MANADO. SEMUA HAK DILINDUNGI.</p>

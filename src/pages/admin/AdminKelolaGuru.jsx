@@ -1,15 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, User, Search, ChevronDown, Plus, Pencil, Power } from 'lucide-react';
+import api from '../../lib/axios';
 
 export default function AdminKelolaGuru() {
-  // Data dummy bervariasi untuk menguji tata letak tabel
-  const guruData = [
-    { id: 'G001', nip: '198507232010011012', nama: 'Budi Setiawan, S.Pd', telepon: '081234567890', status: 'Aktif' },
-    { id: 'G002', nip: '199009122015042008', nama: 'Andriano Darinding, S.Kom', telepon: '082345678901', status: 'Aktif' },
-    { id: 'G003', nip: '-', nama: 'Eka Sepriadi', telepon: '083456789012', status: 'Honorer' },
-    { id: 'G004', nip: '198203152008012015', nama: 'Siti Aminah, M.Pd', telepon: '084567890123', status: 'Aktif' },
-    { id: 'G005', nip: '-', nama: 'Rina Melati', telepon: '085678901234', status: 'Nonaktif' },
-  ];
+  const [guruData, setGuruData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  // Form tambah guru
+  const [formId, setFormId] = useState('');
+  const [formNama, setFormNama] = useState('');
+  const [formNip, setFormNip] = useState('');
+  const [formTelepon, setFormTelepon] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const fetchGuru = () => {
+    setLoading(true);
+    api.get('/admin/guru')
+      .then((res) => setGuruData(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchGuru(); }, []);
+
+  const handleTambah = async () => {
+    if (!formNama.trim()) return alert('Nama guru tidak boleh kosong');
+    setSaving(true);
+    try {
+      await api.post('/admin/guru', {
+        id: formId || undefined,
+        nip: formNip || '-',
+        nama: formNama,
+        telepon: formTelepon || '-',
+        status: 'Aktif',
+      });
+      setFormId(''); setFormNama(''); setFormNip(''); setFormTelepon('');
+      fetchGuru();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Gagal menambah guru');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleStatus = async (guru) => {
+    const newStatus = guru.status === 'Aktif' ? 'Nonaktif' : 'Aktif';
+    try {
+      await api.patch(`/admin/guru/${guru.id}/status`, { status: newStatus });
+      fetchGuru();
+    } catch {
+      alert('Gagal mengubah status');
+    }
+  };
+
+  const filtered = guruData.filter((g) =>
+    `${g.nama} ${g.nip}`.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm flex flex-col gap-4">
@@ -20,6 +67,8 @@ export default function AdminKelolaGuru() {
           <input
             type="text"
             placeholder="Cari Guru dari nama dan NIP..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-400 text-sm outline-none focus:border-gray-500 bg-white"
           />
           <Search size={20} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500" />
@@ -45,9 +94,11 @@ export default function AdminKelolaGuru() {
               </tr>
             </thead>
             <tbody>
-              {guruData.map((guru, index) => (
-                <tr key={index} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-3 border-r border-gray-200 text-center font-medium text-gray-900">{guru.id}</td>
+              {loading ? (
+                <tr><td colSpan="6" className="py-10 text-center text-gray-400">Memuat data...</td></tr>
+              ) : filtered.map((guru, index) => (
+                <tr key={guru.id ?? index} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-3 border-r border-gray-200 text-center font-medium text-gray-900">{guru.id?.toString().slice(0, 6) ?? '-'}</td>
                   <td className="px-6 py-3 border-r border-gray-200 font-mono text-xs">{guru.nip}</td>
                   <td className="px-6 py-3 border-r border-gray-200 font-medium">{guru.nama}</td>
                   <td className="px-6 py-3 border-r border-gray-200 text-center">{guru.telepon}</td>
@@ -56,7 +107,7 @@ export default function AdminKelolaGuru() {
                       guru.status === 'Honorer' ? 'bg-[#FFF3CD] text-[#856404] border-[#FFEEBA]' :
                         'bg-[#FCEAE9] text-[#E16766] border-[#E16766]'
                       }`}>
-                      {guru.status.toUpperCase()}
+                      {(guru.status || '-').toUpperCase()}
                     </span>
                   </td>
                   <td className="px-6 py-3 flex justify-center gap-2">
@@ -64,9 +115,12 @@ export default function AdminKelolaGuru() {
                       <Pencil size={14} />
                       Edit
                     </button>
-                    <button className="bg-[#FCEAE9] text-[#E16766] border border-[#E16766] hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
+                    <button
+                      onClick={() => handleToggleStatus(guru)}
+                      className="bg-[#FCEAE9] text-[#E16766] border border-[#E16766] hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                    >
                       <Power size={14} />
-                      Nonaktif
+                      {guru.status === 'Aktif' ? 'Nonaktif' : 'Aktifkan'}
                     </button>
                   </td>
                 </tr>
@@ -76,7 +130,7 @@ export default function AdminKelolaGuru() {
         </div>
 
         {/* Keadaan Kosong */}
-        {guruData.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="py-12 flex flex-col items-center justify-center text-gray-500">
             <User size={48} className="text-gray-300 mb-4" />
             <p className="font-medium">Belum ada data guru terdaftar</p>
@@ -90,26 +144,38 @@ export default function AdminKelolaGuru() {
           <input
             type="text"
             placeholder="ID (Cth: G001)"
+            value={formId}
+            onChange={(e) => setFormId(e.target.value)}
             className="w-32 px-4 py-2.5 rounded-lg border border-gray-400 text-sm outline-none focus:border-gray-500 bg-white"
           />
           <input
             type="text"
             placeholder="Nama Lengkap & Gelar"
+            value={formNama}
+            onChange={(e) => setFormNama(e.target.value)}
             className="flex-1 px-4 py-2.5 rounded-lg border border-gray-400 text-sm outline-none focus:border-gray-500 bg-white"
           />
           <input
             type="text"
             placeholder="NIP (Kosongkan jika Honorer)"
+            value={formNip}
+            onChange={(e) => setFormNip(e.target.value)}
             className="flex-1 px-4 py-2.5 rounded-lg border border-gray-400 text-sm outline-none focus:border-gray-500 bg-white"
           />
           <input
             type="text"
             placeholder="No. Telepon"
+            value={formTelepon}
+            onChange={(e) => setFormTelepon(e.target.value)}
             className="w-40 px-4 py-2.5 rounded-lg border border-gray-400 text-sm outline-none focus:border-gray-500 bg-white"
           />
-          <button className="bg-[#4A342B] hover:bg-[#36251E] text-white text-sm font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap">
+          <button
+            onClick={handleTambah}
+            disabled={saving}
+            className="bg-[#4A342B] hover:bg-[#36251E] text-white text-sm font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap disabled:opacity-60"
+          >
             <Plus size={16} />
-            Tambah Guru
+            {saving ? 'Menyimpan...' : 'Tambah Guru'}
           </button>
         </div>
       </div>

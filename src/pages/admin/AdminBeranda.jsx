@@ -1,31 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  LayoutDashboard,
   Users,
   GraduationCap,
   BookOpen,
   School,
   CalendarDays,
-  Settings,
-  LogOut,
-  Menu,
   User,
   CalendarCheck,
   CalendarRange,
   ChevronRight,
   Clock
 } from 'lucide-react';
-
-// Sub-komponen untuk Sidebar Link
-const SidebarItem = ({ icon: Icon, label, active = false }) => (
-  <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${active
-    ? 'bg-[#E5E5E5] text-[#3B302B] font-bold shadow-sm'
-    : 'text-gray-400 hover:bg-[#4A3D37] hover:text-white'
-    }`}>
-    <Icon size={20} />
-    <span className="text-sm">{label}</span>
-  </button>
-);
+import api from '../../lib/axios';
 
 // Sub-komponen untuk Statistik
 const StatCard = ({ count, label, subLabel, icon: Icon, colorClass, iconBg }) => (
@@ -79,12 +65,40 @@ const ScheduleCard = ({ type, grade, day, subject, teacher, time, date }) => {
 };
 
 const AdminBeranda = () => {
+  const [stats, setStats] = useState({ murid: '-', guru: '-', mapel: '-', kelas: '-' });
+  const [jadwalHariIni, setJadwalHariIni] = useState([]);
+  const [jadwalMinggu, setJadwalMinggu] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingJadwal, setLoadingJadwal] = useState(true);
+
+  const hariList = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  const hariIni = hariList[new Date().getDay()];
+  const tglFormatted = new Date().toLocaleDateString("id-ID", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric"
+  }).toUpperCase();
+
+  useEffect(() => {
+    api.get("/admin/dashboard")
+      .then((res) => setStats(res.data))
+      .catch(() => {})
+      .finally(() => setLoadingStats(false));
+
+    api.get("/admin/jadwal/hari-ini")
+      .then((res) => setJadwalHariIni(res.data))
+      .catch(() => {});
+
+    api.get("/admin/jadwal/minggu-ini")
+      .then((res) => setJadwalMinggu(res.data))
+      .catch(() => {})
+      .finally(() => setLoadingJadwal(false));
+  }, []);
+
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          count="2"
+          count={loadingStats ? '...' : stats.murid}
           label="Murid Aktif"
           subLabel="Total Murid"
           icon={Users}
@@ -92,7 +106,7 @@ const AdminBeranda = () => {
           iconBg="bg-[#F2A65A]"
         />
         <StatCard
-          count="4"
+          count={loadingStats ? '...' : stats.guru}
           label="Guru Aktif"
           subLabel="Total Tenaga Pengajar"
           icon={GraduationCap}
@@ -100,7 +114,7 @@ const AdminBeranda = () => {
           iconBg="bg-[#5CB874]"
         />
         <StatCard
-          count="6"
+          count={loadingStats ? '...' : stats.mapel}
           label="Mapel Aktif"
           subLabel="Total Mata Pelajaran"
           icon={BookOpen}
@@ -108,7 +122,7 @@ const AdminBeranda = () => {
           iconBg="bg-[#518CB8]"
         />
         <StatCard
-          count="12"
+          count={loadingStats ? '...' : stats.kelas}
           label="Kelas Aktif"
           subLabel="Total Ruang Kelas"
           icon={School}
@@ -123,16 +137,36 @@ const AdminBeranda = () => {
           <CalendarCheck size={24} className="text-gray-700" />
           <h3 className="font-bold text-xl text-gray-800">Jadwal Hari Ini</h3>
           <span className="ml-2 bg-white/50 border border-gray-400 text-gray-700 text-[10px] font-bold px-3 py-1 rounded-full">
-            RABU, 21 MEI 2026
+            {tglFormatted}
           </span>
         </div>
 
-        <div className="bg-white rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner">
-          <div className="bg-gray-50 p-6 rounded-full mb-4">
-            <CalendarRange size={64} className="text-gray-300" />
+        {loadingJadwal ? (
+          <div className="bg-white rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner">
+            <p className="text-gray-400 font-bold text-lg">Memuat jadwal...</p>
           </div>
-          <p className="text-gray-400 font-bold text-lg">Tidak Ada Jadwal Untuk Hari Ini</p>
-        </div>
+        ) : jadwalHariIni.length === 0 ? (
+          <div className="bg-white rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner">
+            <div className="bg-gray-50 p-6 rounded-full mb-4">
+              <CalendarRange size={64} className="text-gray-300" />
+            </div>
+            <p className="text-gray-400 font-bold text-lg">Tidak Ada Jadwal Untuk Hari Ini</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {jadwalHariIni.map((j) => (
+              <ScheduleCard
+                key={j.id}
+                type={j.tipe}
+                grade={`Kelas ${j.kelas}`}
+                day={j.hari}
+                subject={j.mapel}
+                teacher={j.guru}
+                time={j.time}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Jadwal Minggu Ini */}
@@ -147,42 +181,31 @@ const AdminBeranda = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <ScheduleCard
-            type="Pelajaran"
-            grade="Kelas 1"
-            day="Senin"
-            subject="Bahasa Inggris"
-            teacher="Andriano Darinding"
-            time="08:18 - 10:50"
-          />
-          <ScheduleCard
-            type="Pelajaran"
-            grade="Kelas 2"
-            day="Senin"
-            subject="Sastra Mesin"
-            teacher="Budi Setiawan"
-            time="08:18 - 10:50"
-          />
-          <ScheduleCard
-            type="Ujian"
-            grade="Kelas 3"
-            day="Senin"
-            date="23 Mei 2026"
-            subject="Sastra Mesin"
-            teacher="Budi Setiawan"
-            time="08:18 - 10:50"
-          />
-          <ScheduleCard
-            type="Ujian"
-            grade="Kelas 4"
-            day="Senin"
-            date="23 Mei 2026"
-            subject="Rekayasa Perangkat Lunak"
-            teacher="Eka Sepriadi"
-            time="08:18 - 10:50"
-          />
-        </div>
+        {loadingJadwal ? (
+          <p className="text-gray-400 text-sm font-medium">Memuat jadwal...</p>
+        ) : jadwalMinggu.length === 0 ? (
+          <div className="bg-white rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner">
+            <div className="bg-gray-50 p-6 rounded-full mb-4">
+              <CalendarRange size={64} className="text-gray-300" />
+            </div>
+            <p className="text-gray-400 font-bold text-lg">Belum Ada Jadwal</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {jadwalMinggu.slice(0, 8).map((j) => (
+              <ScheduleCard
+                key={j.id}
+                type={j.tipe}
+                grade={`Kelas ${j.kelas}`}
+                day={j.hari}
+                date={j.tanggal}
+                subject={j.mapel}
+                teacher={j.guru}
+                time={j.time}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* FOOTER */}

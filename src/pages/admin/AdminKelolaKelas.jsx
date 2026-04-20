@@ -1,16 +1,51 @@
-import React from 'react';
-import { Menu, User, Search, ChevronDown, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, ChevronDown, Plus } from 'lucide-react';
+import api from '../../lib/axios';
 
 export default function AdminKelolaKelas() {
-  // Data dummy sesuai dengan gambar
-  const kelasData = [
-    { no: 1, nama: '1a' },
-    { no: 2, nama: '2b' },
-    { no: 3, nama: '3' },
-    { no: 4, nama: '4' },
-    { no: 5, nama: '5' },
-    { no: 6, nama: '6' },
-  ];
+  const [kelasData, setKelasData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [formNama, setFormNama] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const fetchKelas = () => {
+    setLoading(true);
+    api.get('/admin/kelas')
+      .then((res) => setKelasData(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchKelas(); }, []);
+
+  const handleTambah = async () => {
+    if (!formNama.trim()) return alert('Nama kelas tidak boleh kosong');
+    setSaving(true);
+    try {
+      await api.post('/admin/kelas', { nama: formNama });
+      setFormNama('');
+      fetchKelas();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Gagal menambah kelas');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleStatus = async (kelas) => {
+    const newStatus = kelas.status === 'aktif' ? 'nonaktif' : 'aktif';
+    try {
+      await api.patch(`/admin/kelas/${kelas.id}/status`, { status: newStatus });
+      fetchKelas();
+    } catch {
+      alert('Gagal mengubah status');
+    }
+  };
+
+  const filtered = kelasData.filter((k) =>
+    k.nama.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="bg-white rounded-2xl border border-gray-300 shadow-sm overflow-hidden flex flex-col">
@@ -21,6 +56,8 @@ export default function AdminKelolaKelas() {
             <input
               type="text"
               placeholder="Cari kelas..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-400 text-sm outline-none focus:border-gray-500 bg-white"
             />
             <Search size={20} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500" />
@@ -32,10 +69,23 @@ export default function AdminKelolaKelas() {
           </button>
         </div>
 
-        <button className="bg-[#4A342B] hover:bg-[#36251E] text-white text-sm font-bold px-6 py-3 rounded-xl flex items-center gap-2 transition-colors">
-          <Plus size={18} />
-          Tambah Kelas
-        </button>
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Nama kelas baru (cth: 1a)"
+            value={formNama}
+            onChange={(e) => setFormNama(e.target.value)}
+            className="px-4 py-2.5 rounded-xl border border-gray-400 text-sm outline-none bg-white w-52"
+          />
+          <button
+            onClick={handleTambah}
+            disabled={saving}
+            className="bg-[#4A342B] hover:bg-[#36251E] text-white text-sm font-bold px-6 py-3 rounded-xl flex items-center gap-2 transition-colors disabled:opacity-60"
+          >
+            <Plus size={18} />
+            {saving ? 'Menyimpan...' : 'Tambah Kelas'}
+          </button>
+        </div>
       </div>
 
       {/* Table Area */}
@@ -49,19 +99,27 @@ export default function AdminKelolaKelas() {
             </tr>
           </thead>
           <tbody className="text-gray-800">
-            {kelasData.map((kelas, index) => (
-              <tr key={index} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-5 border border-gray-300 text-lg">{kelas.no}</td>
+            {loading ? (
+              <tr><td colSpan="3" className="py-10 text-gray-400">Memuat data...</td></tr>
+            ) : filtered.map((kelas, index) => (
+              <tr key={kelas.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-5 border border-gray-300 text-lg">{index + 1}</td>
                 <td className="px-6 py-5 border border-gray-300 text-lg font-bold text-left pl-10">{kelas.nama}</td>
                 <td className="px-6 py-5 border border-gray-300">
                   <div className="flex justify-center">
-                    <button className="bg-[#FDF2F2] text-[#E16766] border border-[#FAD7D7] hover:bg-red-50 px-6 py-2 rounded-lg text-sm font-semibold transition-colors">
-                      Nonaktifkan
+                    <button
+                      onClick={() => handleToggleStatus(kelas)}
+                      className="bg-[#FDF2F2] text-[#E16766] border border-[#FAD7D7] hover:bg-red-50 px-6 py-2 rounded-lg text-sm font-semibold transition-colors"
+                    >
+                      {kelas.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan'}
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
+            {!loading && filtered.length === 0 && (
+              <tr><td colSpan="3" className="py-10 text-gray-400">Tidak ada data kelas</td></tr>
+            )}
           </tbody>
         </table>
       {/* FOOTER */}

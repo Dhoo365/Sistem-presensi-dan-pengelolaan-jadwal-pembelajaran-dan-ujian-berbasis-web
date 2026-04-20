@@ -1,7 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Menu,
-  User,
   Search,
   Plus,
   KeyRound,
@@ -9,61 +7,43 @@ import {
   Pencil,
   UserCog,
 } from "lucide-react";
+import api from "../../lib/axios";
 
 export default function AdminKelolaAkun() {
   const [tab, setTab] = useState("guru");
   const [status, setStatus] = useState("semua");
   const [search, setSearch] = useState("");
+  const [guruList, setGuruList] = useState([]);
+  const [ortuList, setOrtuList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const guru = [
-    {
-      id: 1,
-      nama: "Bu Rina",
-      nip: "1987721",
-      email: "rina@mail.com",
-      aktif: true,
-    },
-    {
-      id: 2,
-      nama: "Pak Joko",
-      nip: "1987722",
-      email: "joko@mail.com",
-      aktif: true,
-    },
-    {
-      id: 3,
-      nama: "Bu Devi",
-      nip: "1987724",
-      email: "-",
-      aktif: false,
-    },
-  ];
+  const fetchData = () => {
+    setLoading(true);
+    Promise.all([
+      api.get("/admin/akun/guru"),
+      api.get("/admin/akun/ortu"),
+    ])
+      .then(([guruRes, ortuRes]) => {
+        setGuruList(guruRes.data);
+        setOrtuList(ortuRes.data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
 
-  const ortu = [
-    {
-      id: 1,
-      anak: "Andriano",
-      kelas: "Kelas 1",
-      email: "ortu.andri@mail.com",
-      aktif: true,
-    },
-    {
-      id: 2,
-      anak: "Zahra",
-      kelas: "Kelas 3",
-      email: "-",
-      aktif: false,
-    },
-    {
-      id: 3,
-      anak: "Yusuf",
-      kelas: "Kelas 4",
-      email: "ortu.yusuf@mail.com",
-      aktif: true,
-    },
-  ];
+  useEffect(() => { fetchData(); }, []);
 
-  const data = tab === "guru" ? guru : ortu;
+  const handleToggleStatus = async (item) => {
+    const newStatus = item.aktif ? "nonaktif" : "aktif";
+    try {
+      await api.patch(`/admin/akun/${item.id}/status`, { status: newStatus });
+      fetchData();
+    } catch {
+      alert("Gagal mengubah status akun");
+    }
+  };
+
+  const data = tab === "guru" ? guruList : ortuList;
 
   const result = data.filter((item) => {
     const key =
@@ -227,7 +207,9 @@ export default function AdminKelolaAkun() {
                 </thead>
 
                 <tbody>
-                  {result.map((item) => (
+                  {loading ? (
+                    <tr><td colSpan="5" className="py-10 text-center text-gray-400">Memuat data...</td></tr>
+                  ) : result.map((item) => (
                     <tr
                       key={item.id}
                       className="border-b border-gray-100 hover:bg-gray-50"
@@ -280,6 +262,7 @@ export default function AdminKelolaAkun() {
                           </button>
 
                           <button
+                            onClick={() => handleToggleStatus(item)}
                             className={`px-3 py-2 rounded-lg text-xs font-bold items-center justify-center flex items-center gap-1.5 transition-colors border ${
                               item.aktif
                                 ? "bg-[#FCEAE9] text-[#E16766] border-[#E16766]"
@@ -297,7 +280,7 @@ export default function AdminKelolaAkun() {
                     </tr>
                   ))}
 
-                  {result.length === 0 && (
+                  {!loading && result.length === 0 && (
                     <tr>
                       <td
                         colSpan="5"

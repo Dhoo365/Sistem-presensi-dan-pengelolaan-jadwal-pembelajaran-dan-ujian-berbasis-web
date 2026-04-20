@@ -15,8 +15,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-import { supabase } from "../lib/supabase";
-import AuthLayout from "../layouts/AuthLayout";
+import { supabase } from "../../lib/supabase";
+import AuthLayout from "../../layouts/AuthLayout";
 
 export default function ResetUbah() {
   const navigate = useNavigate();
