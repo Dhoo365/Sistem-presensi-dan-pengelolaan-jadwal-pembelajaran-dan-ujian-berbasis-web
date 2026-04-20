@@ -1,15 +1,19 @@
 import { Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import ResetPassword from "./pages/ResetKirim";
-import AdminBeranda from "./pages/AdminBeranda";
+import Login from "./pages/login/Login";
+import ResetPassword from "./pages/login/ResetKirim";
+import UpdatePassword from "./pages/ResetUbah";
+import AdminBeranda from "./pages/admin/AdminBeranda";
 import AdminLayout from './layouts/AdminLayout'
-import AdminKelolaMurid from "./pages/AdminKelolaMurid";
-import AdminKelolaGuru from './pages/AdminKelolaGuru'
-import AdminKelolaKelas from './pages/AdminKelolaKelas'
-import AdminKelolaJadwal from './pages/AdminKelolaJadwal'
-import AdminKelolaAkun from "./pages/AdminKelolaAkun";
-import NotFoundPage from "./pages/NotFoundPage";
-import DashboardOrtu from './pages/DashboardOrtu'
+import AdminKelolaMurid from "./pages/admin/AdminKelolaMurid";
+import AdminKelolaGuru from './pages/admin/AdminKelolaGuru'
+import AdminKelolaKelas from './pages/admin/AdminKelolaKelas'
+import AdminKelolaJadwal from './pages/admin/AdminKelolaJadwal'
+import AdminKelolaAkun from "./pages/admin/AdminKelolaAkun";
+import NotFoundPage from "./pages/login/NotFoundPage";
+import DashboardOrtu from './pages/ortu/DashboardOrtu'
+import LayoutOrtu from './layouts/LayoutOrtu'
+import AdminKelolaMapel from "./pages/admin/AdminKelolaMapel";
+
 
 function App() {
 
@@ -17,7 +21,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/ortu" element={<DashboardOrtu />} />
+      <Route path="/update-password" element={<UpdatePassword />} />
 
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminBeranda />} />
@@ -26,6 +30,7 @@ function App() {
         <Route path="kelas" element={<AdminKelolaKelas />} />
         <Route path="jadwal" element={<AdminKelolaJadwal />} />
         <Route path="akun" element={<AdminKelolaAkun />} />
+        <Route path="mapel" element={<AdminKelolaMapel />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

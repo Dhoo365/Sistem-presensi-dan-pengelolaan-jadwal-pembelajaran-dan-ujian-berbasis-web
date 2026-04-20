@@ -1,15 +1,11 @@
 import { NavLink } from "react-router-dom";
-import logo from "../assets/foto/logo.png";
+import logo from "../../assets/foto/logo.png";
 
-export default function AdminSidebar({ isSidebarOpen }) {
+export default function AdminSidebar({ isSidebarOpen = true }) {
   const menus = [
-    { name: "Beranda", icon: "ti ti-home", path: "/admin" },
-    { name: "Kelola Murid", icon: "ti ti-users", path: "/admin/murid" },
-    { name: "Kelola Guru", icon: "ti ti-school", path: "/admin/guru" },
-    { name: "Kelola Mapel", icon: "ti ti-book", path: "/admin/mapel" },
-    { name: "Kelola Kelas", icon: "ti ti-layout-grid", path: "/admin/kelas" },
-    { name: "Kelola Jadwal", icon: "ti ti-calendar-event", path: "/admin/jadwal" },
-    { name: "Kelola Akun", icon: "ti ti-settings", path: "/admin/akun" },
+    { name: "Beranda", icon: "ti ti-home", path: "/ortu" },
+    { name: "Lihat Presensi", icon: "ti ti-book", path: "/ortu/presensi" },
+    { name: "Lihat Jadwal", icon: "ti ti-calendar-event", path: "/ortu/jadwal" },
   ];
 
   return (
@@ -75,7 +71,8 @@ export default function AdminSidebar({ isSidebarOpen }) {
           {isSidebarOpen ? "LAINNYA" : "•"}
         </div>
 
-        <button
+        <NavLink
+          to={"/login"}
           type="button"
           className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-white hover:bg-red-500/20 transition group relative"
         >
@@ -88,7 +85,7 @@ export default function AdminSidebar({ isSidebarOpen }) {
               Keluar
             </div>
           )}
-        </button>
+        </NavLink>
       </div>
     </aside >
   );
