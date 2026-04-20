@@ -478,7 +478,7 @@ export default function AdminKelolaMurid() {
               <input
                 type="text"
                 placeholder="Cari NIS atau nama murid..."
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 text-sm outline-none focus:border-gray-500"
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 text-sm outline-none gfocus:border-gray-500"
               />
             </div>
             <div className="flex items-center gap-2">
