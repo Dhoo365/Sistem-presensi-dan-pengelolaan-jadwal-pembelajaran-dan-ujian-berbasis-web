@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import AdminHeader from "../components/admin/AdminHeader";
+import AdminFooter from "../components/admin/FooterAdmin"
 
 export default function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -18,6 +19,7 @@ export default function AdminLayout() {
           <AdminHeader isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
           <Outlet />
         </main>
+        <AdminFooter></AdminFooter>
       </div>
     </div>
   );
