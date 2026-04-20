@@ -1,11 +1,11 @@
 import { NavLink } from "react-router-dom";
 import logo from "../../assets/foto/logo.png";
 
-export default function AdminSidebar({ isSidebarOpen = true }) {
+export default function AdminSidebar({ isSidebarOpen }) {
   const menus = [
     { name: "Beranda", icon: "ti ti-home", path: "/ortu" },
-    { name: "Lihat Presensi", icon: "ti ti-book", path: "/ortu/presensi" },
-    { name: "Lihat Jadwal", icon: "ti ti-calendar-event", path: "/ortu/jadwal" },
+    { name: "Lihat Presensi", icon: "ti ti-book", path: "/ortu/lihat-presensi" },
+    { name: "Lihat Jadwal", icon: "ti ti-calendar-event", path: "/ortu/lihat-jadwal" },
   ];
 
   return (
@@ -43,7 +43,7 @@ export default function AdminSidebar({ isSidebarOpen = true }) {
           <NavLink
             key={index}
             to={item.path}
-            end={item.path === "/admin"}
+            end={item.path === "/ortu"}
             className={({ isActive }) =>
               `w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-200 group ${isActive
                 ? "bg-white text-[#8B5E3C] shadow-md"

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/ortu/SidebarOrtu";
 import Header from "../components/ortu/HeaderOrtu";
+import Footer from "../components/ortu/FooterOrtu"
 
 export default function LayoutOrtu() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -18,6 +19,7 @@ export default function LayoutOrtu() {
           <Header isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
           <Outlet />
         </main>
+        <Footer></Footer>
       </div>
     </div>
   );
