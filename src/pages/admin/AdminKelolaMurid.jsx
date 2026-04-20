@@ -444,7 +444,7 @@ export default function AdminKelolaMurid() {
         <div className="flex items-center gap-4 ml-9">
           <button className="bg-[#C5C5C5] hover:bg-[#B0B0B0] text-gray-800 text-sm font-bold px-5 py-2.5 rounded-lg flex items-center gap-2 transition-colors border border-gray-400">
             <Download size={16} />
-            Unduh Template CSV
+            Unduh Template Excel
           </button>
 
           <div className="flex items-center bg-[#C5C5C5] border border-gray-400 rounded-lg overflow-hidden">
@@ -457,7 +457,7 @@ export default function AdminKelolaMurid() {
 
           <button className="bg-[#715445] hover:bg-[#5E4236] text-white text-sm font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm">
             <Upload size={16} />
-            Unggah CSV
+            Unggah Excel
           </button>
         </div>
       </section>
