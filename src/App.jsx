@@ -13,7 +13,11 @@ import NotFoundPage from "./pages/login/NotFoundPage";
 import DashboardOrtu from './pages/ortu/DashboardOrtu'
 import LayoutOrtu from './layouts/LayoutOrtu'
 import AdminKelolaMapel from "./pages/admin/AdminKelolaMapel";
-
+import DashboardGuru from "./pages/guru/DashboardGuru"
+import LayoutGuru from "./layouts/LayoutGuru"
+import KelolaPresensi from "./pages/guru/KelolaPresensi"
+import RiwayatPresensi from "./pages/guru/RiwayatPresensi"
+import LihatJadwal from "./pages/guru/LihatJadwal"
 
 function App() {
 
@@ -31,6 +35,12 @@ function App() {
         <Route path="jadwal" element={<AdminKelolaJadwal />} />
         <Route path="akun" element={<AdminKelolaAkun />} />
         <Route path="mapel" element={<AdminKelolaMapel />} />
+      </Route>
+      <Route path="/guru" element={<LayoutGuru />}>
+        <Route index element={<DashboardGuru />} />
+        <Route path="presensi" element={<KelolaPresensi />} />
+        <Route path="riwayat" element={<RiwayatPresensi />} />
+        <Route path="jadwal" element={<LihatJadwal />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
