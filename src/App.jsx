@@ -18,6 +18,7 @@ import LayoutGuru from "./layouts/LayoutGuru"
 import KelolaPresensi from "./pages/guru/KelolaPresensi"
 import RiwayatPresensi from "./pages/guru/RiwayatPresensi"
 import LihatJadwal from "./pages/guru/LihatJadwal"
+import LihatLaporan from "./pages/guru/LaporanGuru"
 
 function App() {
 
@@ -41,6 +42,7 @@ function App() {
         <Route path="presensi" element={<KelolaPresensi />} />
         <Route path="riwayat" element={<RiwayatPresensi />} />
         <Route path="jadwal" element={<LihatJadwal />} />
+        <Route path="laporan" element={<LihatLaporan />}/>
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

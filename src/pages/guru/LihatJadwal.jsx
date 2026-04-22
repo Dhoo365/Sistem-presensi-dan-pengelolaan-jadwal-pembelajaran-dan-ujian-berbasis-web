@@ -7,22 +7,22 @@ import {
 
 const dataPelajaran = {
   Senin: [
-    { jam: "08:00 - 09:30", mapel: "Seni Budaya", guru: "Pak Gusti"},
-    { jam: "08:00 - 09:30", mapel: "PKN", guru: "Pak Harry"}
+    { jam: "08:00 - 09:30", mapel: "Seni Budaya"},
+    { jam: "08:00 - 09:30", mapel: "PKN"}
   ],  
   Selasa: [
-    { jam: "08:00 - 09:30", mapel: "Bahasa Indonesia", guru: "Pak Ahmad" },
-    { jam: "08:00 - 09:30", mapel: "Matematika", guru: "Ibu Merry" },
+    { jam: "08:00 - 09:30", mapel: "Bahasa Indonesia"},
+    { jam: "08:00 - 09:30", mapel: "Matematika"},
   ],
   Rabu: [
-    { jam: "08:00 - 09:30", mapel: "Bahasa Inggris", guru: "Pak Amin" },
+    { jam: "08:00 - 09:30", mapel: "Bahasa Inggris"},
   ],
   Kamis: [
-    { jam: "08:00 - 09:30", mapel: "PJOK", guru: "Pak Ahmad" },
-    { jam: "08:00 - 09:30", mapel: "Prakarya", guru: "Ibu Merry" },
+    { jam: "08:00 - 09:30", mapel: "PJOK"},
+    { jam: "08:00 - 09:30", mapel: "Prakarya"},
   ],
   Jumat: [
-    { jam: "08:00 - 09:30", mapel: "Bahasa Indonesia", guru: "Pak Ahmad" },
+    { jam: "08:00 - 09:30", mapel: "Bahasa Indonesia"},
   ],
 };
 
@@ -111,11 +111,7 @@ const LihatJadwal = () => {
                       <p className="font-medium text-sm">
                         {item.mapel}
                       </p>
-
-                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                        <FaUserCircle />
-                        {item.guru}
-                      </div>
+                      
                     </div>
                   ))
                 ) : (

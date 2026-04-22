@@ -6,8 +6,8 @@ export default function SidebarGuru({ isSidebarOpen }) {
     { name: "Beranda", icon: "ti ti-home", path: "/guru" },
     { name: "Kelola Presensi", icon: "ti ti-book", path: "/guru/presensi" },
     { name: "Riwayat Presensi", icon: "ti ti-history-toggle", path: "/guru/riwayat" },
-    { name: "Lihat Jadwal", icon: "ti ti-calendar-event", path: "/guru/jadwal" }
-
+    { name: "Lihat Jadwal", icon: "ti ti-calendar-event", path: "/guru/jadwal" },
+    { name: "Lihat Laporan", icon: "ti ti-file-description", path: "/guru/laporan" }
   ];
 
   return (

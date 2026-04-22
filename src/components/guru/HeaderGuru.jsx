@@ -10,6 +10,7 @@ export default function AdminHeader({ isSidebarOpen, setIsSidebarOpen }) {
     "/guru/presensi": { title: "Kelola Presensi", desc: "Management Presensi Siswa & Siswi" },
     "/guru/riwayat": { title: "Riwayat Presensi", desc: "Lihat Riwayat Presensi" },
     "/guru/jadwal": { title: "Lihat Jadwal", desc: "Lihat Jadwal Mengajar" },
+    "/guru/laporan": { title: "Lihat Laporan Presensi", desc: "Rekapan Laporan Presensi Siswa" }
   };
 
   const currentMeta = pageMeta[location.pathname] || { title: "Panel Guru", desc: "Management Sistem" };
