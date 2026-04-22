@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaDownload } from "react-icons/fa";
 
-const KelolaPresensi = () => {
+const LaporanPresensi = () => {
   const [kelas, setKelas] = useState("");
   const [mode, setMode] = useState("bulan");
   const [timeline, setTimeline] = useState("");
@@ -14,6 +14,7 @@ const KelolaPresensi = () => {
     { nama: "Lino", kelas: "Kelas 1", hadir: 19, sakit: 0, izin: 2, alpha: 1 },
     { nama: "Malik", kelas: "Kelas 1", hadir: 22, sakit: 1, izin: 0, alpha: 0 },
     { nama: "Gwen", kelas: "Kelas 1", hadir: 21, sakit: 1, izin: 1, alpha: 0 },
+    
   ];
 
   const bulanList = [
@@ -23,14 +24,17 @@ const KelolaPresensi = () => {
 
   const semesterList = ["Ganjil", "Genap"];
 
+  const filteredData = data.filter((d) =>
+    d.nama.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div className="p-6 bg-gray-100 min-h-screen space-y-5">
 
-      {/* FILTER + BUTTON */}
-      <div className="flex flex-wrap justify-between items-center gap-4">
+      {/* ================= FILTER ================= */}
+      <div className="flex justify-between flex-wrap gap-4">
 
-        {/* LEFT */}
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-wrap gap-3">
 
           {/* SEARCH */}
           <input
@@ -38,7 +42,7 @@ const KelolaPresensi = () => {
             placeholder="Cari nama siswa..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="px-4 py-2 rounded-lg border w-64 focus:outline-none focus:ring-2 focus:ring-[#6B4F3B]"
+            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#6B4F3B]"
           />
 
           {/* KELAS */}
@@ -82,7 +86,7 @@ const KelolaPresensi = () => {
 
         </div>
 
-        {/* RIGHT BUTTON */}
+        {/* BUTTON */}
         <button className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition">
           <FaDownload />
           Unduh PDF
@@ -90,58 +94,61 @@ const KelolaPresensi = () => {
 
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white rounded-xl shadow border overflow-hidden">
+      {/* ================= TABLE ================= */}
+      <div className="bg-white rounded-xl border border-gray-300 overflow-hidden shadow">
 
         <div className="max-h-[420px] overflow-y-auto">
 
-          <table className="w-full border-collapse">
+          <table className="w-full text-sm border-separate border-spacing-0">
 
             {/* HEADER */}
             <thead className="bg-[#6B4F3B] text-white sticky top-0 z-10">
               <tr>
-                <th className="p-3 border">No</th>
-                <th className="p-3 border">Nama</th>
-                <th className="p-3 border">Kelas</th>
-                <th className="p-3 border">Hadir</th>
-                <th className="p-3 border">Sakit</th>
-                <th className="p-3 border">Izin</th>
-                <th className="p-3 border">Alpha</th>
+                <th className="p-3 border-r border-white/30">No</th>
+                <th className="p-3 border-r border-white/30">Nama</th>
+                <th className="p-3 border-r border-white/30">Kelas</th>
+                <th className="p-3 border-r border-white/30 text-center">Hadir</th>
+                <th className="p-3 border-r border-white/30 text-center">Sakit</th>
+                <th className="p-3 border-r border-white/30 text-center">Izin</th>
+                <th className="p-3 text-center">Alpha</th>
               </tr>
             </thead>
 
             {/* BODY */}
             <tbody>
-              {data
-                .filter((d) =>
-                  d.nama.toLowerCase().includes(search.toLowerCase())
-                )
-                .map((d, i) => (
-                  <tr
-                    key={i}
-                    className="text-center hover:bg-gray-50 transition"
-                  >
-                    <td className="p-3 border">{i + 1}</td>
-                    <td className="p-3 border">{d.nama}</td>
-                    <td className="p-3 border">{d.kelas}</td>
+              {filteredData.map((item, index) => (
+                <tr key={index} className="hover:bg-gray-50 transition">
 
-                    <td className="p-3 border text-green-600 font-semibold">
-                      {d.hadir}
-                    </td>
+                  <td className="p-3 border-r border-b border-gray-300">
+                    {index + 1}
+                  </td>
 
-                    <td className="p-3 border text-red-500 font-semibold">
-                      {d.sakit}
-                    </td>
+                  <td className="p-3 border-r border-b border-gray-300">
+                    {item.nama}
+                  </td>
 
-                    <td className="p-3 border text-yellow-500 font-semibold">
-                      {d.izin}
-                    </td>
+                  <td className="p-3 border-r border-b border-gray-300">
+                    {item.kelas}
+                  </td>
 
-                    <td className="p-3 border text-gray-500 font-semibold">
-                      {d.alpha}
-                    </td>
-                  </tr>
-                ))}
+                  <td className="p-3 border-r border-b border-gray-300 text-center text-green-600 font-semibold">
+                    {item.hadir}
+                  </td>
+
+                  <td className="p-3 border-r border-b border-gray-300 text-center text-red-500 font-semibold">
+                    {item.sakit}
+                  </td>
+
+                  <td className="p-3 border-r border-b border-gray-300 text-center text-yellow-600 font-semibold">
+                    {item.izin}
+                  </td>
+
+                  <td className="p-3 border-b border-gray-300 text-center text-gray-600 font-semibold">
+                    {item.alpha}
+                  </td>
+
+                </tr>
+              ))}
             </tbody>
 
           </table>
@@ -153,4 +160,4 @@ const KelolaPresensi = () => {
   );
 };
 
-export default KelolaPresensi;
+export default LaporanPresensi;
