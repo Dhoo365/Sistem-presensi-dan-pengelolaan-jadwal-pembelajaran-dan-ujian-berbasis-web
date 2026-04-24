@@ -59,7 +59,7 @@ export default function ResetUbah() {
   /* =========================
      SUBMIT
   ========================= */
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (password.length < 6) {
@@ -74,10 +74,10 @@ export default function ResetUbah() {
 
     setLoading(true);
 
-    const { error } =
-      await supabase.auth.updateUser({
-        password: password,
-      });
+    const { error } = await supabase.auth.updateUser({
+      password: password,
+      data: { harus_ganti_password: false }  // ← tambahkan ini
+    });
 
     setLoading(false);
 
@@ -87,9 +87,7 @@ export default function ResetUbah() {
     }
 
     await supabase.auth.signOut();
-
     alert("Password berhasil diperbarui");
-
     navigate("/login");
   };
 

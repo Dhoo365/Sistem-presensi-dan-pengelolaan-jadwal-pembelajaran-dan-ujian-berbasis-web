@@ -3,103 +3,171 @@ const router = express.Router();
 const supabase = require("../config/supabase");
 const requireAuth = require("../middleware/auth");
 
-// Ambil riwayat presensi lengkap untuk murid anak ortu
-router.get("/", requireAuth, async (req, res) => {
+router.get("/:nis", requireAuth, async (req, res) => {
   try {
-    const { murid_id, bulan, tahun } = req.query;
+    const { nis } = req.params;
+    const { bulan, tahun, semester, hari } = req.query;
 
-    if (!murid_id) {
-      return res.status(400).json({ error: "murid_id diperlukan" });
-    }
-
-    let query = supabase
-      .from("presensi")
-      .select(`
-        id, tanggal, status, jam_masuk,
-        mapel:mapel_id(nama)
-      `)
-      .eq("murid_id", murid_id)
+    /* ================= AMBIL DATA DASAR ================= */
+    const { data: rows, error } = await supabase
+      .from("absensi")
+      .select("*")
+      .eq("nis", nis)
       .order("tanggal", { ascending: false });
 
-    // Filter bulan jika ada
-    if (bulan && tahun) {
-      const tglMulai = `${tahun}-${String(bulan).padStart(2, "0")}-01`;
-      const tglAkhir = new Date(tahun, bulan, 0).toISOString().split("T")[0];
-      query = query.gte("tanggal", tglMulai).lte("tanggal", tglAkhir);
+    if (error) throw error;
+
+    let filtered = rows || [];
+
+    /* ================= FILTER TAHUN ================= */
+    if (tahun) {
+      filtered = filtered.filter(r => String(r.tanggal).startsWith(tahun));
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
+    /* ================= FILTER BULAN ================= */
+    if (bulan) {
+      const bln = String(bulan).padStart(2, "0");
 
-    // Hitung statistik
-    const stats = { hadir: 0, izin: 0, sakit: 0, alpha: 0, total: 0 };
-    const hariMap = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      filtered = filtered.filter(r => String(r.tanggal).slice(5, 7) === bln);
+    }
 
-    const riwayat = (data || []).map((p) => {
-      const st = (p.status || "").toLowerCase();
-      if (st === "hadir") stats.hadir++;
-      else if (st === "izin") stats.izin++;
-      else if (st === "sakit") stats.sakit++;
-      else stats.alpha++;
-      stats.total++;
+    /* ================= FILTER SEMESTER ================= */
+    if (semester) {
+      filtered = filtered.filter(r => {
+        const b = Number(String(r.tanggal).slice(5, 7));
 
-      const tgl = new Date(p.tanggal);
-      return {
-        id: p.id,
-        tanggal: tgl.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
-        hari: hariMap[tgl.getDay()],
-        jam: p.jam_masuk ?? "09:00",
-        mapel: p.mapel?.nama ?? "-",
-        status: p.status,
-      };
-    });
+        if (semester === "ganjil") {
+          return b >= 7 && b <= 12;
+        }
 
-    // Chart data untuk bar chart
-    const chartData = [
-      { name: "Hadir", value: stats.hadir },
-      { name: "Izin", value: stats.izin },
-      { name: "Sakit", value: stats.sakit },
-      { name: "Alpha", value: stats.alpha },
+        if (semester === "genap") {
+          return b >= 1 && b <= 6;
+        }
+
+        return true;
+      });
+    }
+
+    /* ================= HARI MAP ================= */
+    const hariMap = [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu"
     ];
 
-    res.json({ stats, riwayat, chartData });
+    /* ================= FILTER HARI ================= */
+    if (hari) {
+      filtered = filtered.filter(r => {
+        const [y, m, d] = String(r.tanggal).split("-");
+
+        const dt = new Date(Number(y), Number(m) - 1, Number(d));
+
+        return hariMap[dt.getDay()] === hari;
+      });
+    }
+
+    /* ================= STATISTIK ================= */
+    const stats = {
+      hadir: 0,
+      izin: 0,
+      sakit: 0,
+      alpha: 0,
+      total: 0
+    };
+
+    const chartMap = {
+      Hadir: 0,
+      Izin: 0,
+      Sakit: 0,
+      Alpha: 0
+    };
+
+    const riwayat = [];
+
+    for (const r of filtered) {
+      const status = (r.status || "").toLowerCase();
+
+      if (status === "hadir") {
+        stats.hadir++;
+        chartMap.Hadir++;
+      } else if (status === "izin") {
+        stats.izin++;
+        chartMap.Izin++;
+      } else if (status === "sakit") {
+        stats.sakit++;
+        chartMap.Sakit++;
+      } else {
+        stats.alpha++;
+        chartMap.Alpha++;
+      }
+
+      stats.total++;
+
+      /* ================= NAMA MAPEL ================= */
+      let namaMapel = "-";
+
+      if (r.id_mapel) {
+        const { data: mapelRows } = await supabase
+          .from("mapel")
+          .select("nama")
+          .eq("id_mapel", r.id_mapel)
+          .limit(1);
+
+        if (mapelRows && mapelRows.length > 0) {
+          namaMapel = mapelRows[0].nama;
+        }
+      }
+
+      /* ================= FORMAT TANGGAL ================= */
+      const [y, m, d] = String(r.tanggal).split("-");
+
+      const dt = new Date(Number(y), Number(m) - 1, Number(d));
+
+      riwayat.push({
+        tanggal: dt.toLocaleDateString("id-ID"),
+        hari: hariMap[dt.getDay()],
+        jam: new Date(r.created_at).toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
+        mapel: namaMapel,
+        status: r.status
+      });
+    }
+
+    /* ================= CHART ================= */
+    const chartData = [
+      {
+        name: "Hadir",
+        value: chartMap.Hadir
+      },
+      {
+        name: "Izin",
+        value: chartMap.Izin
+      },
+      {
+        name: "Sakit",
+        value: chartMap.Sakit
+      },
+      {
+        name: "Alpha",
+        value: chartMap.Alpha
+      }
+    ];
+
+    res.json({
+      stats,
+      riwayat,
+      chartData
+    });
   } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil data presensi" });
-  }
-});
-
-// Tambah record presensi
-router.post("/", requireAuth, async (req, res) => {
-  try {
-    const { murid_id, jadwal_id, mapel_id, tanggal, status, jam_masuk } = req.body;
-    const { data, error } = await supabase
-      .from("presensi")
-      .insert([{ murid_id, jadwal_id, mapel_id, tanggal, status, jam_masuk }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    res.json({ message: "Presensi berhasil dicatat", data });
-  } catch (err) {
-    res.status(500).json({ error: err.message || "Gagal mencatat presensi" });
-  }
-});
-
-// Update record presensi
-router.put("/:id", requireAuth, async (req, res) => {
-  try {
-    const { status, jam_masuk } = req.body;
-    const { data, error } = await supabase
-      .from("presensi")
-      .update({ status, jam_masuk })
-      .eq("id", req.params.id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    res.json({ message: "Presensi berhasil diperbarui", data });
-  } catch (err) {
-    res.status(500).json({ error: "Gagal memperbarui presensi" });
+    res.status(500).json({
+      error: err.message || "Gagal mengambil presensi"
+    });
   }
 });
 

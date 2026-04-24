@@ -43,9 +43,57 @@ export default function AdminKelolaKelas() {
     }
   };
 
-  const filtered = kelasData.filter((k) =>
-    k.nama.toLowerCase().includes(search.toLowerCase())
+  const handleHapus = async (id) => {
+  const yakin = window.confirm(
+    "Hapus kelas ini?"
   );
+
+  if (!yakin) return;
+
+  try {
+    await api.delete(
+      `/admin/kelas/${id}`
+    );
+
+    fetchKelas();
+  } catch (err) {
+    alert(
+      err.response?.data
+        ?.error ||
+        "Gagal hapus kelas"
+    );
+  }
+};
+
+  const [filterStatus,
+  setFilterStatus] =
+  useState("semua");
+
+
+const filtered =
+kelasData.filter((k) => {
+
+  const cocokSearch =
+    k.nama
+      .toLowerCase()
+      .includes(
+        search.toLowerCase()
+      );
+
+  const cocokStatus =
+    filterStatus ===
+    "semua"
+      ? true
+      : String(k.status)
+          .toLowerCase()
+          .trim() ===
+        filterStatus;
+
+  return (
+    cocokSearch &&
+    cocokStatus
+  );
+});
 
   return (
     <div className="bg-white rounded-2xl border border-gray-300 shadow-sm overflow-hidden flex flex-col">
@@ -62,11 +110,54 @@ export default function AdminKelolaKelas() {
             />
             <Search size={20} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500" />
           </div>
+            <div className="flex gap-2">
 
-          <button className="bg-[#715445] hover:bg-[#5E4236] text-white text-sm font-bold px-6 py-3 rounded-xl flex items-center gap-2 transition-colors">
-            Tingkat
-            <ChevronDown size={18} />
-          </button>
+            <button
+            onClick={() =>
+            setFilterStatus(
+            "semua"
+            )}
+            className={`px-4 py-2 rounded-xl text-sm font-bold ${
+            filterStatus ===
+            "semua"
+            ? "bg-[#4A342B] text-white"
+            : "bg-gray-100"
+            }`}
+            >
+            Semua
+            </button>
+
+            <button
+            onClick={() =>
+            setFilterStatus(
+            "aktif"
+            )}
+            className={`px-4 py-2 rounded-xl text-sm font-bold ${
+            filterStatus ===
+            "aktif"
+            ? "bg-green-600 text-white"
+            : "bg-gray-100"
+            }`}
+            >
+            Aktif
+            </button>
+
+            <button
+            onClick={() =>
+            setFilterStatus(
+            "nonaktif"
+            )}
+            className={`px-4 py-2 rounded-xl text-sm font-bold ${
+            filterStatus ===
+            "nonaktif"
+            ? "bg-red-600 text-white"
+            : "bg-gray-100"
+            }`}
+            >
+            Nonaktif
+            </button>
+
+            </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -106,14 +197,35 @@ export default function AdminKelolaKelas() {
                 <td className="px-6 py-5 border border-gray-300 text-lg">{index + 1}</td>
                 <td className="px-6 py-5 border border-gray-300 text-lg font-bold text-left pl-10">{kelas.nama}</td>
                 <td className="px-6 py-5 border border-gray-300">
-                  <div className="flex justify-center">
+                <div className="flex justify-center gap-2">
+
+                  <button
+                    onClick={() =>
+                      handleToggleStatus(kelas)
+                    }
+                    className={`px-6 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      kelas.status === "aktif"
+                        ? "bg-[#FDF2F2] text-[#E16766] border border-[#FAD7D7] hover:bg-red-50"
+                        : "bg-[#EAF7EE] text-[#2E7D32] border border-[#B7E1C0] hover:bg-green-50"
+                    }`}
+                  >
+                    {kelas.status === "aktif"
+                      ? "Nonaktifkan"
+                      : "Aktifkan"}
+                  </button>
+
+                  {kelas.status !== "aktif" && (
                     <button
-                      onClick={() => handleToggleStatus(kelas)}
-                      className="bg-[#FDF2F2] text-[#E16766] border border-[#FAD7D7] hover:bg-red-50 px-6 py-2 rounded-lg text-sm font-semibold transition-colors"
+                      onClick={() =>
+                        handleHapus(kelas.id)
+                      }
+                      className="bg-red-600 text-white hover:bg-red-700 px-6 py-2 rounded-lg text-sm font-semibold transition-colors"
                     >
-                      {kelas.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan'}
+                      Hapus
                     </button>
-                  </div>
+                  )}
+
+                </div>
                 </td>
               </tr>
             ))}
@@ -122,11 +234,6 @@ export default function AdminKelolaKelas() {
             )}
           </tbody>
         </table>
-      {/* FOOTER */}
-      <footer className="bg-[#DFDFDF] border-t border-gray-300 py-4 px-8 flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-widest shrink-0">
-        <p>© 2026 SD GMIM 12 MANADO. SEMUA HAK DILINDUNGI.</p>
-        <p>SISTEM PRESENSI DAN PENJADWALAN V1.0.0</p>
-      </footer>
       </div>
     </div>
   );

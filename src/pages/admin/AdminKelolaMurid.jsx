@@ -1,52 +1,368 @@
-import React from 'react';
+import React from "react";
+import api from "../../lib/axios";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import {
-  LayoutDashboard,
-  Users,
-  GraduationCap,
-  BookOpen,
-  School,
-  CalendarDays,
-  Settings,
-  LogOut,
-  Menu,
-  User,
   Calendar as CalendarIcon,
   CloudUpload,
   ClipboardList,
   Search,
   Filter,
-  Pencil,
-  Power,
   Plus,
   Download,
-  Upload
-} from 'lucide-react';
-
-// Sub-komponen Sidebar (sebagai referensi tata letak visual)
-const SidebarItem = ({ icon: Icon, label, active = false }) => (
-  <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${active
-    ? 'bg-[#E5E5E5] text-[#3B302B] font-bold shadow-sm'
-    : 'text-gray-400 hover:bg-[#4A3D37] hover:text-white'
-    }`}>
-    <Icon size={20} />
-    <span className="text-sm">{label}</span>
-  </button>
-);
+  Upload,
+} from "lucide-react";
 
 export default function AdminKelolaMurid() {
-  const muridData = [
-    { nis: 'M001', nama: 'Agus', kelas: 'Kelas 1', status: 'Aktif', tanggal: 'Senin, 23 Mei 2026' },
-    { nis: 'M002', nama: 'Budi', kelas: 'Kelas 1', status: 'Aktif', tanggal: 'Senin, 23 Mei 2026' },
-    { nis: 'M003', nama: 'Cintra', kelas: 'Kelas 2', status: 'Aktif', tanggal: 'Senin, 23 Mei 2026' },
-    { nis: 'M004', nama: 'Daniel', kelas: 'Kelas 2', status: 'aktif', tanggal: 'Senin, 23 Mei 2026' },
-    { nis: 'M005', nama: 'Dio', kelas: 'Kelas 3', status: 'Aktif', tanggal: 'Senin, 23 Mei 2026' },
-  ];
-
+  /* ===============================
+     STATE
+  =============================== */
   const [tahunBaru, setTahunBaru] = React.useState("");
   const [ganjilMulai, setGanjilMulai] = React.useState("");
   const [ganjilSelesai, setGanjilSelesai] = React.useState("");
   const [genapMulai, setGenapMulai] = React.useState("");
   const [genapSelesai, setGenapSelesai] = React.useState("");
+  const [tahunAktif, setTahunAktif] = React.useState("-");
+
+  const [muridData, setMuridData] = React.useState([]);
+  const [kelasList, setKelasList] = React.useState([]);
+
+  const [loading, setLoading] = React.useState(true);
+  const [uploadLoading, setUploadLoading] = React.useState(false);
+
+  const [search, setSearch] = React.useState("");
+  const [filterStatus, setFilterStatus] = React.useState("semua");
+  const [filterKelas, setFilterKelas] = React.useState("semua");
+  const [filterTahunLulus, setFilterTahunLulus] = React.useState("semua");
+
+  const [excelFile, setExcelFile] = React.useState(null);
+
+  const [showTambah, setShowTambah] = React.useState(false);
+
+  const [formTambah, setFormTambah] = React.useState({
+    nis: "",
+    nama: "",
+    kelas: "",
+    nama_ortu: ""
+  });
+
+  const [editId, setEditId] = React.useState(null);
+
+  const [editForm, setEditForm] = React.useState({
+    nama: "",
+    kelas: "",
+    nama_ortu: ""
+  });
+
+  /* ===============================
+     FETCH MASTER
+  =============================== */
+const fetchMaster = async () => {
+  try {
+    const kelasRes = await api
+      .get("/admin/kelas/aktif")
+      .catch(() => ({ data: [] }));
+
+    setKelasList(
+      kelasRes.data || []
+    );
+
+    const tahunRes = await api
+      .get("/admin/tahun-ajaran/aktif")
+      .catch(() => ({
+        data: { id: "-" },
+      }));
+
+    setTahunAktif(
+      tahunRes.data?.id || "-"
+    );
+
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+  /* ===============================
+     FETCH MURID
+  =============================== */
+  const fetchMurid = async () => {
+    try {
+      setLoading(true);
+
+      const res = await api.get("/admin/murid");
+
+      setMuridData(res.data || []);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMuridLulus = async () => {
+    try {
+      setLoading(true);
+
+      const res = await api.get("/admin/murid/lulus");
+
+      setMuridData(res.data || []);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRollover = async () => {
+  try {
+    const res = await api.post(
+      "/admin/tahun-ajaran/rollover",
+      {
+        tahunBaru,
+        semester1: {
+          mulai: ganjilMulai,
+          selesai: ganjilSelesai,
+        },
+        semester2: {
+          mulai: genapMulai,
+          selesai: genapSelesai,
+        },
+      }
+    );
+
+    await fetchMaster();
+    await fetchMurid();
+
+    alert(
+      `Berhasil rollover\nNaik kelas: ${res.data.naikKelas}\nLulus: ${res.data.lulus}`
+    );
+
+  } catch (err) {
+    console.log(err);
+
+    alert(
+      err.response?.data?.error ||
+      "Gagal rollover"
+    );
+  }
+  };
+
+  /* ===============================
+     INIT
+  =============================== */
+  React.useEffect(() => {
+    fetchMaster();
+  }, []);
+
+  React.useEffect(() => {
+    if (filterStatus === "lulus") {
+      fetchMuridLulus();
+    } else {
+      fetchMurid();
+    }
+  }, [filterStatus]);
+
+  /* ===============================
+     ACTION
+  =============================== */
+  const toggleStatus = async (murid) => {
+    try {
+      const statusBaru =
+        murid.status === "aktif" ? "nonaktif" : "aktif";
+
+      await api.patch(
+        `/admin/murid/${murid.nis}/status`,
+        { status: statusBaru }
+      );
+
+      fetchMurid();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const saveEdit = async (nis) => {
+    try {
+      await api.patch(`/admin/murid/${nis}`, {
+      nama: editForm.nama,
+      kelas: Number(editForm.kelas),
+      nama_ortu: editForm.nama_ortu
+    });
+
+      setEditId(null);
+      fetchMurid();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const hapusMurid = async (nis) => {
+    const yakin = window.confirm(
+      "Yakin hapus murid ini?"
+    );
+
+    if (!yakin) return;
+
+    try {
+      await api.delete(`/admin/murid/${nis}`);
+      fetchMurid();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const tambahMurid = async () => {
+    try {
+      await api.post("/admin/murid", {
+        nis: formTambah.nis,
+        nama: formTambah.nama,
+        kelas_id: Number(formTambah.kelas),
+        nama_ortu: formTambah.nama_ortu || null
+      });
+
+      setShowTambah(false);
+
+      setFormTambah({
+        nis: "",
+        nama: "",
+        kelas: "",
+        nama_ortu: ""
+      });
+
+      fetchMurid();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const uploadExcel = async () => {
+    try {
+      if (!excelFile) {
+        alert("Pilih file dulu");
+        return;
+      }
+
+      setUploadLoading(true);
+
+      const formData = new FormData();
+      formData.append("file", excelFile);
+
+      await api.post(
+        "/admin/murid/upload",
+        formData,
+        {
+          headers: {
+            "Content-Type":
+              "multipart/form-data",
+          },
+        }
+      );
+
+      alert("Upload berhasil");
+
+      setExcelFile(null);
+      fetchMurid();
+    } catch (err) {
+      console.log(err);
+      alert("Upload gagal");
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const data = [
+
+      {
+        NIS: "M001",
+        NAMA: "Rafael Kairupan",
+        NAMA_ORANG_TUA: "Yanto Kairupan",
+        KELAS: "2"
+      },
+      {
+        NIS: "M002",
+        NAMA: "Mikael Runtuwene",
+        NAMA_ORANG_TUA: "Maria Runtuwene",
+        KELAS: "2"
+      }
+    ];
+
+    const worksheet =
+      XLSX.utils.json_to_sheet(data);
+
+    const workbook =
+      XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "Template"
+    );
+
+    const excelBuffer = XLSX.write(
+      workbook,
+      {
+        bookType: "xlsx",
+        type: "array",
+      }
+    );
+
+    const fileData = new Blob(
+      [excelBuffer],
+      {
+        type:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }
+    );
+
+    saveAs(
+      fileData,
+      "template_murid.xlsx"
+    );
+  };
+
+  /* ===============================
+     FILTER
+  =============================== */
+  const filteredData = muridData.filter(
+    (m) => {
+      const cocokSearch =
+        `${m.nis} ${m.nama}`
+          .toLowerCase()
+          .includes(
+            search.toLowerCase()
+          );
+
+      const cocokStatus =
+        filterStatus === "semua"
+          ? true
+          : m.status === filterStatus;
+
+      const cocokKelas =
+        filterStatus === "lulus"
+          ? true
+          : filterKelas === "semua"
+          ? true
+          : String(m.kelas) ===
+            String(filterKelas);
+
+      const cocokTahun =
+        filterStatus !== "lulus"
+          ? true
+          : filterTahunLulus ===
+            "semua"
+          ? true
+          : String(m.tahun) ===
+            String(filterTahunLulus);
+
+      return (
+        cocokSearch &&
+        cocokStatus &&
+        cocokKelas &&
+        cocokTahun
+      );
+    }
+  );
 
   return (
     <div className="space-y-8">
@@ -83,7 +399,7 @@ export default function AdminKelolaMurid() {
 
               <div className="flex items-center gap-3">
                 <h2 className="text-4xl font-black text-gray-800 tracking-tight">
-                  2025-2026
+                  {tahunAktif}
                 </h2>
 
                 <span className="text-xs font-bold px-3 py-1 rounded-full border border-[#60B873] text-[#60B873] bg-[#E4F5E8]">
@@ -100,17 +416,40 @@ export default function AdminKelolaMurid() {
 
               <div className="flex items-center bg-[#F8F8F8] border border-gray-300 rounded-xl px-4 py-3">
                 <CalendarIcon size={18} className="text-gray-500 mr-3" />
+                  <select
+                    value={tahunBaru}
+                    onChange={(e) =>
+                      setTahunBaru(
+                        e.target.value
+                      )
+                    }
+                    className="w-full bg-transparent outline-none text-sm font-semibold text-gray-800"
+                  >
+                    <option value="">
+                      Pilih Tahun Ajaran
+                    </option>
 
-                                <select
-                  value={tahunBaru}
-                  onChange={(e) => setTahunBaru(e.target.value)}
-                  className="w-full bg-transparent outline-none text-sm font-semibold text-gray-800"
-                >
-                  <option value="">Pilih Tahun Ajaran</option>
-                  <option value="2026-2027">2026-2027</option>
-                  <option value="2027-2028">2027-2028</option>
-                  <option value="2028-2029">2028-2029</option>
-                </select>
+                    {(() => {
+                      const awal =
+                        parseInt(
+                          tahunAktif.split("-")[0]
+                        ) + 1;
+
+                      const akhir =
+                        awal + 1;
+
+                      const nextYear =
+                        `${awal}-${akhir}`;
+
+                      return (
+                        <option
+                          value={nextYear}
+                        >
+                          {nextYear}
+                        </option>
+                      );
+                    })()}
+                  </select>
               </div>
             </div>
           </div>
@@ -207,8 +546,6 @@ export default function AdminKelolaMurid() {
     </h4>
 
     {(() => {
-      const tahunAktif = "2025-2026";
-      const aktifAwal = 2025;
 
       const parseDate = (val) => {
         if (!val) return null;
@@ -220,6 +557,10 @@ export default function AdminKelolaMurid() {
       const gSelesai = parseDate(ganjilSelesai);
       const eMulai = parseDate(genapMulai);
       const eSelesai = parseDate(genapSelesai);
+      const aktifAwal =
+      parseInt(
+        tahunAktif.split("-")[0]
+      ) || 0;
 
       let statusText = "";
       let statusColor = "";
@@ -325,8 +666,7 @@ export default function AdminKelolaMurid() {
         }
 
         /* =========================
-           VALIDASI SEKOLAH SWASTA
-           FLEKSIBEL TAPI MASUK AKAL
+           VALIDASI BULAN & DURASI
         ========================= */
 
         /* Ganjil mulai Mei-Oktober */
@@ -411,6 +751,7 @@ export default function AdminKelolaMurid() {
           </div>
 
           <button
+            onClick={handleRollover}
             disabled={tombolDisable}
             className={`mt-auto w-full py-3 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 mt-6 ${
               tombolDisable
@@ -430,121 +771,518 @@ export default function AdminKelolaMurid() {
       </div>
     </section>
 
-      {/* Section 2: Upload Murid Dari CSV */}
+      {/* Section 2: Upload Murid Dari Excel */}
       <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
         <div className="flex items-center gap-3 mb-2">
           <CloudUpload size={24} className="text-gray-700" />
-          <h3 className="font-bold text-xl text-gray-800">Upload Murid Dari CSV</h3>
+          <h3 className="font-bold text-xl text-gray-800">Upload Murid Dari Excel</h3>
         </div>
         <p className="text-sm text-gray-600 mb-5 ml-9">
-          Upload data murid sekaligus menggunakan file CSV.<br />
-          Format Wajib: <strong>NIS, NAMA, KELAS.</strong>
+          Upload data murid sekaligus menggunakan file Excel.<br />
+          Format Wajib: <strong>NIS, NAMA, NAMA_ORANG_TUA, KELAS.</strong>
         </p>
 
         <div className="flex items-center gap-4 ml-9">
-          <button className="bg-[#C5C5C5] hover:bg-[#B0B0B0] text-gray-800 text-sm font-bold px-5 py-2.5 rounded-lg flex items-center gap-2 transition-colors border border-gray-400">
-            <Download size={16} />
-            Unduh Template Excel
+          <button
+          onClick={
+          downloadTemplate
+          }
+          className="bg-[#C5C5C5] hover:bg-[#B0B0B0] text-gray-800 text-sm font-bold px-5 py-2.5 rounded-lg flex items-center gap-2 transition-colors border border-gray-400"
+          >
+          <Download size={16} />
+          Unduh Template Excel
           </button>
 
           <div className="flex items-center bg-[#C5C5C5] border border-gray-400 rounded-lg overflow-hidden">
-            <button className="bg-[#8A7B76] text-white text-sm font-bold px-4 py-2.5 flex items-center gap-2 hover:bg-[#736561] transition-colors">
-              <Upload size={16} />
-              Pilih File
-            </button>
-            <span className="text-xs text-gray-600 px-4">Tidak ada file yang dipilih</span>
+
+          <label className="bg-[#8A7B76] text-white text-sm font-bold px-4 py-2.5 flex items-center gap-2 hover:bg-[#736561] cursor-pointer">
+
+          <Upload size={16} />
+          Pilih File
+
+          <input
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          hidden
+          onChange={(e) =>
+          setExcelFile(
+          e.target.files[0]
+          )}
+          />
+
+          </label>
+          <span className="text-xs text-gray-700 px-4">
+          {excelFile
+          ? excelFile.name
+          : "Tidak ada file dipilih"}
+          </span>
           </div>
 
-          <button className="bg-[#715445] hover:bg-[#5E4236] text-white text-sm font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm">
-            <Upload size={16} />
-            Unggah Excel
+          <button
+          onClick={uploadExcel}
+          disabled={uploadLoading}
+          className="bg-[#715445] hover:bg-[#5E4236] text-white text-sm font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+          >
+          <Upload size={16} />
+
+          {uploadLoading
+          ? "Mengunggah..."
+          : "Unggah Excel"}
+
           </button>
         </div>
       </section>
 
       {/* Section 3: Daftar Murid */}
-      <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
-        <div className="flex items-center gap-3 mb-2">
-          <ClipboardList size={24} className="text-gray-700" />
-          <h3 className="font-bold text-xl text-gray-800">Daftar Murid</h3>
-        </div>
-        <p className="text-sm text-gray-600 mb-5 ml-9">Upload data murid yang terdaftar di sistem</p>
+    <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
+      <div className="flex items-center gap-3 mb-2">
+        <ClipboardList size={24} className="text-gray-700" />
+        <h3 className="font-bold text-xl text-gray-800">
+          Daftar Murid
+        </h3>
+      </div>
 
-        <div className="ml-9">
-          {/* Search and Filters */}
-          <div className="flex justify-between items-center mb-4">
-            <div className="relative w-80">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Cari NIS atau nama murid..."
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 text-sm outline-none gfocus:border-gray-500"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="bg-[#E4F5E8] text-[#60B873] text-xs font-bold px-4 py-1.5 rounded-full border border-[#60B873] cursor-pointer">Aktif</span>
-              <span className="bg-[#FCEAE9] text-[#E16766] text-xs font-bold px-4 py-1.5 rounded-full border border-[#E16766] cursor-pointer">Nonaktif</span>
-              <span className="bg-[#EBE4F5] text-[#8460B8] text-xs font-bold px-4 py-1.5 rounded-full border border-[#8460B8] cursor-pointer">Lulus</span>
-              <button className="bg-white border border-gray-400 text-gray-700 text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-2 hover:bg-gray-50">
-                <Filter size={12} />
-                Filter
-              </button>
-            </div>
+      <p className="text-sm text-gray-600 mb-5 ml-9">
+        Upload data murid yang terdaftar di sistem
+      </p>
+
+      <div className="ml-9">
+
+        {/* Search + Filter */}
+        <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
+
+          {/* Search */}
+          <div className="relative w-80">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            />
+
+            <input
+              type="text"
+              placeholder="Cari NIS atau nama murid..."
+              value={search}
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 text-sm outline-none focus:border-gray-500"
+            />
           </div>
 
-          {/* Table */}
-          <div className="bg-white border border-gray-300 rounded-lg overflow-hidden mb-4">
-            <table className="w-full text-left text-sm text-gray-700">
-              <thead className="bg-[#D3D3D3] text-[11px] uppercase text-gray-600 font-bold border-b border-gray-300">
-                <tr>
-                  <th className="px-6 py-3 border-r border-gray-300 text-center w-24">NIS</th>
-                  <th className="px-6 py-3 border-r border-gray-300">NAMA</th>
-                  <th className="px-6 py-3 border-r border-gray-300 text-center w-32">KELAS</th>
-                  <th className="px-6 py-3 border-r border-gray-300 text-center w-32">STATUS</th>
-                  <th className="px-6 py-3 border-r border-gray-300 text-center w-48">TANGGAL DAFTAR</th>
-                  <th className="px-6 py-3 text-center">AKSI</th>
-                </tr>
-              </thead>
-              <tbody>
-                {muridData.map((murid, index) => (
-                  <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="px-6 py-3 border-r border-gray-200 text-center">{murid.nis}</td>
-                    <td className="px-6 py-3 border-r border-gray-200 font-medium">{murid.nama}</td>
-                    <td className="px-6 py-3 border-r border-gray-200 text-center">{murid.kelas}</td>
-                    <td className="px-6 py-3 border-r border-gray-200 text-center">
-                      <span className="bg-[#E4F5E8] text-[#60B873] text-[10px] font-bold px-3 py-1 rounded-full border border-[#60B873] capitalize">
-                        {murid.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 border-r border-gray-200 text-center text-xs">{murid.tanggal}</td>
-                    <td className="px-6 py-3 flex justify-center gap-2">
-                    <button className="bg-[#E8F0FE] text-[#1A73E8] border border-[#1A73E8] hover:bg-blue-100 px-4 py-1 rounded-full text-xs font-bold flex items-center gap-1 transition-colors">
-                      <Pencil size={12} />
-                      Edit
-                    </button>
-                    <button className="bg-[#FCEAE9] text-[#E16766] border border-[#E16766] hover:bg-red-50 px-4 py-1 rounded-full text-xs font-bold flex items-center gap-1 transition-colors">
-                      <Power size={12} />
-                      Nonaktifkan
-                    </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* Filter */}
+          <div className="flex items-center gap-2 flex-wrap">
 
-          {/* Add Button */}
-          <button className="w-full border-2 border-dashed border-gray-400 rounded-lg py-3 flex justify-center items-center gap-2 text-gray-600 font-bold text-sm hover:bg-gray-100 transition-colors">
-            <Plus size={18} />
-            Tambah Murid Baru
-          </button>
+            <button
+              onClick={() =>
+                setFilterStatus("aktif")
+              }
+              className={`text-xs font-bold px-4 py-1.5 rounded-full border ${
+                filterStatus === "aktif"
+                  ? "bg-[#E4F5E8] text-[#60B873] border-[#60B873]"
+                  : "bg-white text-gray-600 border-gray-300"
+              }`}
+            >
+              Aktif
+            </button>
+
+            <button
+              onClick={() =>
+                setFilterStatus("nonaktif")
+              }
+              className={`text-xs font-bold px-4 py-1.5 rounded-full border ${
+                filterStatus === "nonaktif"
+                  ? "bg-[#FCEAE9] text-[#E16766] border-[#E16766]"
+                  : "bg-white text-gray-600 border-gray-300"
+              }`}
+            >
+              Nonaktif
+            </button>
+
+            <button
+              onClick={() => {
+                setFilterStatus("lulus");
+                fetchMuridLulus();
+              }}
+              className={`text-xs font-bold px-4 py-1.5 rounded-full border ${
+                filterStatus === "lulus"
+                  ? "bg-[#EBE4F5] text-[#8460B8] border-[#8460B8]"
+                  : "bg-white text-gray-600 border-gray-300"
+              }`}
+            >
+              Lulus
+            </button>
+
+            <button
+              onClick={() =>
+                setFilterStatus("semua")
+              }
+              className={`text-xs font-bold px-4 py-1.5 rounded-full border flex items-center gap-2 ${
+                filterStatus === "semua"
+                  ? "bg-[#E8F0FE] text-[#1A73E8] border-[#1A73E8]"
+                  : "bg-white text-gray-600 border-gray-300"
+              }`}
+            >
+              <Filter size={12} />
+              Semua
+            </button>
+
+            <select
+              value={filterKelas}
+              onChange={(e) =>
+                setFilterKelas(
+                  e.target.value
+                )
+              }
+              className="px-4 py-1.5 rounded-full border border-gray-500 text-xs outline-none"
+            >
+              <option value="semua">
+                Semua Kelas
+              </option>
+
+              {kelasList.map((k) => (
+                <option
+                  key={k.id}
+                  value={k.id}
+                >
+                  {k.nama}
+                </option>
+              ))}
+            </select>
+
+
+            {filterStatus ===
+              "lulus" && (
+              <select
+                value={
+                  filterTahunLulus
+                }
+                onChange={(e) =>
+                  setFilterTahunLulus(
+                    e.target.value
+                  )
+                }
+                className="px-4 py-1.5 rounded-full border border-gray-500 text-xs outline-none"
+              >
+                <option value="semua">
+                  Semua Tahun
+                </option>
+
+                <option value="2024">
+                  2024
+                </option>
+                <option value="2025">
+                  2025
+                </option>
+                <option value="2026">
+                  2026
+                </option>
+              </select>
+            )}
+          </div>
         </div>
-      </section>
-      {/* FOOTER */}
-      <footer className="bg-[#DFDFDF] border-t border-gray-300 py-4 px-8 flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-widest shrink-0">
-        <p>© 2026 SD GMIM 12 MANADO. SEMUA HAK DILINDUNGI.</p>
-        <p>SISTEM PRESENSI DAN PENJADWALAN V1.0.0</p>
-      </footer>
+
+        {/* TABLE */}
+      <div className="bg-white border border-gray-300 rounded-xl overflow-x-auto mb-4 shadow-sm">
+        <table className="w-full min-w-[900px] text-sm text-gray-700">
+          
+<thead className="bg-[#D3D3D3] text-[11px] uppercase text-gray-700 font-bold">
+  <tr>
+    <th className="px-4 py-3 text-center border-r border-gray-300 w-28">
+      NIS
+    </th>
+
+    <th className="px-4 py-3 text-left border-r border-gray-300 min-w-[220px]">
+      Nama Murid
+    </th>
+
+    <th className="px-4 py-3 text-left border-r border-gray-300 min-w-[220px]">
+      Nama Orang Tua
+    </th>
+
+    <th className="px-4 py-3 text-center border-r border-gray-300 w-28">
+      Kelas
+    </th>
+
+    <th className="px-4 py-3 text-center border-r border-gray-300 w-36">
+      Status
+    </th>
+
+    <th className="px-4 py-3 text-center w-48">
+      Aksi
+    </th>
+  </tr>
+</thead>
+
+          <tbody>
+            {loading ? (
+              <tr>
+                <td
+                  colSpan="6"
+                  className="text-center py-8 text-gray-400"
+                >
+                  Memuat data...
+                </td>
+              </tr>
+            ) : filteredData.length === 0 ? (
+              <tr>
+                <td
+                  colSpan="6"
+                  className="text-center py-8 text-gray-400"
+                >
+                  Tidak ada data murid
+                </td>
+              </tr>
+          ) : (
+            filteredData.map((murid, index) => (
+            <tr
+              key={murid.nis || index}
+              className="border-t border-gray-200 hover:bg-gray-50"
+            >
+              {/* NIS */}
+              <td className="px-4 py-3 text-center border-r border-gray-200 font-medium">
+                {murid.nis}
+              </td>
+
+              {/* Nama Murid */}
+              <td className="px-4 py-3 border-r border-gray-200">
+                {editId === murid.nis ? (
+                  <input
+                    value={editForm.nama}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        nama: e.target.value
+                      })
+                    }
+                    className="border px-2 py-1 rounded w-full"
+                  />
+                ) : (
+                  murid.nama
+                )}
+              </td>
+
+              {/* Nama Orang Tua */}
+              <td className="px-4 py-3 border-r border-gray-200">
+                {editId === murid.nis ? (
+                  <input
+                    value={editForm.nama_ortu}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        nama_ortu: e.target.value
+                      })
+                    }
+                    className="border px-2 py-1 rounded w-full"
+                    placeholder="Nama Orang Tua"
+                  />
+                ) : (
+                  murid.nama_ortu || "-"
+                )}
+              </td>
+
+              {/* Kelas */}
+              <td className="px-4 py-3 text-center border-r border-gray-200">
+                {editId === murid.nis ? (
+                  <select
+                    value={editForm.kelas}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        kelas: e.target.value
+                      })
+                    }
+                    className="border px-2 py-1 rounded text-sm"
+                  >
+                    {kelasList.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.nama}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  String(murid.kelas).replace("Kelas ", "").trim()
+                )}
+              </td>
+
+              {/* Status */}
+              <td className="px-4 py-3 text-center border-r border-gray-200">
+                <span
+                  className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
+                    murid.status === "aktif"
+                      ? "bg-[#E4F5E8] text-[#60B873] border-[#60B873]"
+                      : murid.status === "lulus"
+                      ? "bg-[#EBE4F5] text-[#8460B8] border-[#8460B8]"
+                      : "bg-[#FCEAE9] text-[#E16766] border-[#E16766]"
+                  }`}
+                >
+                  {murid.status}
+                </span>
+              </td>
+
+              {/* Aksi */}
+              <td className="px-4 py-3">
+                <div className="flex justify-center items-center gap-2 whitespace-nowrap">
+                  {editId === murid.nis ? (
+                    <>
+                      <button
+                        onClick={() => saveEdit(murid.nis)}
+                        className="bg-[#E4F5E8] text-[#60B873] border border-[#60B873] px-5 py-1.5 rounded-full text-xs font-bold"
+                      >
+                        Simpan
+                      </button>
+
+                      <button
+                        onClick={() => setEditId(null)}
+                        className="bg-gray-100 text-gray-600 border border-gray-400 px-5 py-1.5 rounded-full text-xs font-bold"
+                      >
+                        Batal
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditId(murid.nis);
+                          setEditForm({
+                            nama: murid.nama,
+                            kelas: String(murid.kelas)
+                              .replace("Kelas ", "")
+                              .trim(),
+                            nama_ortu: murid.nama_ortu || ""
+                          });
+                        }}
+                        className="bg-[#E8F0FE] text-[#1A73E8] border border-[#1A73E8] px-5 py-1.5 rounded-full text-xs font-bold"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={() => toggleStatus(murid)}
+                        className="bg-[#FCEAE9] text-[#E16766] border border-[#E16766] px-5 py-1.5 rounded-full text-xs font-bold"
+                      >
+                        {murid.status === "aktif"
+                          ? "Nonaktifkan"
+                          : "Aktifkan"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </td>
+            </tr>
+            ))
+          )}
+          </tbody>
+
+        </table>
+      </div>
+
+        {/* Add Button */}
+        <button
+          onClick={() =>
+            setShowTambah(true)
+          }
+          className="w-full border-2 border-dashed border-gray-400 rounded-lg py-3 flex justify-center items-center gap-2 text-gray-600 font-bold text-sm hover:bg-gray-100 transition-colors"
+        >
+          <Plus size={18} />
+          Tambah Murid Baru
+        </button>
+
+      </div>
+
+      {showTambah && (
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+      <div className="bg-white rounded-2xl p-6 w-[420px] space-y-4">
+
+      <h3 className="text-xl font-bold">
+      Tambah Murid
+      </h3>
+
+      <input
+      placeholder="NIS"
+      value={formTambah.nis}
+      onChange={(e)=>
+      setFormTambah({
+      ...formTambah,
+      nis:e.target.value
+      })
+      }
+      className="w-full border p-3 rounded-xl"
+      />
+
+      <input
+      placeholder="Nama"
+      value={formTambah.nama}
+      onChange={(e)=>
+      setFormTambah({
+      ...formTambah,
+      nama:e.target.value
+      })
+      }
+      className="w-full border p-3 rounded-xl"
+      />
+
+      <input
+      placeholder="Nama Orang Tua"
+      value={formTambah.nama_ortu}
+      onChange={(e)=>
+        setFormTambah({
+          ...formTambah,
+          nama_ortu:e.target.value
+        })
+      }
+      className="w-full border p-3 rounded-xl"
+    />
+
+<select
+  value={formTambah.kelas}
+  onChange={(e) =>
+    setFormTambah({
+      ...formTambah,
+      kelas:
+        e.target.value,
+    })
+  }
+  className="w-full border p-3 rounded-xl"
+>
+  <option value="">
+    Pilih Kelas
+  </option>
+
+  {kelasList.map((k) => (
+    <option
+      key={k.id}
+      value={k.id}
+    >
+      {k.nama}
+    </option>
+  ))}
+</select>
+
+      <div className="flex gap-3 pt-2">
+
+      <button
+      onClick={tambahMurid}
+      className="flex-1 bg-[#715445] text-white py-3 rounded-xl font-bold"
+      >
+      Tambah
+      </button>
+
+      <button
+      onClick={()=>
+      setShowTambah(false)
+      }
+      className="flex-1 bg-gray-100 py-3 rounded-xl font-bold"
+      >
+      Batal
+      </button>
+
+      </div>
+
+      </div>
+      </div>
+      )}
+    </section>
     </div>
   );
 }

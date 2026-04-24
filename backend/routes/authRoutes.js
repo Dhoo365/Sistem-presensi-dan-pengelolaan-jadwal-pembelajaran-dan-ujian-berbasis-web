@@ -3,7 +3,6 @@ const router = express.Router();
 const supabase = require("../config/supabase");
 const requireAuth = require("../middleware/auth");
 
-// Cek token aktif & kembalikan info user
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const { data: profile, error } = await supabase
@@ -22,7 +21,6 @@ router.get("/me", requireAuth, async (req, res) => {
   }
 });
 
-// Endpoint sederhana cek auth aktif
 router.get("/", (req, res) => {
   res.json({ message: "auth aktif" });
 });

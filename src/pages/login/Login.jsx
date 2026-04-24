@@ -65,6 +65,13 @@ export default function Login() {
       localStorage.setItem("nama", profile.nama || "");
       localStorage.setItem("user_id", profile.id);
 
+      // ← TAMBAHKAN INI: cek flag harus ganti password
+      const harusGanti = data.user?.user_metadata?.harus_ganti_password;
+      if (harusGanti) {
+        navigate("/update-password");
+        return;
+      }
+
       // Redirect sesuai role
       if (profile.role === "admin") {
         navigate("/admin");

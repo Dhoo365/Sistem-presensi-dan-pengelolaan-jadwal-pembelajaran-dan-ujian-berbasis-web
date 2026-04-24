@@ -2,181 +2,133 @@ const express = require("express");
 const router = express.Router();
 const supabase = require("../config/supabase");
 const requireAuth = require("../middleware/auth");
+const multer = require("multer");
+const XLSX = require("xlsx");
 
-// ===== DASHBOARD =====
+const upload = multer({
+  storage: multer.memoryStorage()
+});
+
+/* =====================================================
+   HELPERS
+===================================================== */
+
+const hariUrut = {
+  Senin: 1,
+  Selasa: 2,
+  Rabu: 3,
+  Kamis: 4,
+  Jumat: 5,
+  Sabtu: 6,
+  Minggu: 7
+};
+
+function formatTanggal(tgl) {
+  if (!tgl) return "-";
+  return new Date(tgl).toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+}
+
+/* =====================================================
+   ROOT
+===================================================== */
+
+router.get("/", (req, res) => {
+  res.json({ message: "admin aktif" });
+});
+
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
 router.get("/dashboard", requireAuth, async (req, res) => {
   try {
+    /* ambil tahun ajaran aktif */
+    const { data: tahunAktif, error: errTahun } = await supabase
+      .from("tahun_ajaran")
+      .select("id")
+      .eq("aktif", true)
+      .single();
+
+    if (errTahun) throw errTahun;
+
     const [muridRes, guruRes, mapelRes, kelasRes] = await Promise.all([
-      supabase.from("murid").select("id", { count: "exact" }).eq("status", "aktif"),
-      supabase.from("guru").select("id", { count: "exact" }).eq("status", "Aktif"),
-      supabase.from("mapel").select("id", { count: "exact" }),
-      supabase.from("kelas").select("id", { count: "exact" }).eq("status", "aktif"),
+      /* murid hanya tahun aktif */
+      supabase
+        .from("kelas_siswa")
+        .select("*", {
+          count: "exact",
+          head: true
+        })
+        .eq("tahun_id", tahunAktif.id)
+        .eq("status", "aktif"),
+
+      supabase
+        .from("guru")
+        .select("*", {
+          count: "exact",
+          head: true
+        })
+        .eq("status", "aktif"),
+
+      supabase
+        .from("mapel")
+        .select("*", {
+          count: "exact",
+          head: true
+        })
+        .eq("status", "aktif"),
+
+      supabase
+        .from("kelas")
+        .select("*", {
+          count: "exact",
+          head: true
+        })
+        .eq("status", "aktif")
     ]);
 
     res.json({
-      murid: muridRes.count ?? 0,
-      guru: guruRes.count ?? 0,
-      mapel: mapelRes.count ?? 0,
-      kelas: kelasRes.count ?? 0,
+      murid: muridRes.count || 0,
+      guru: guruRes.count || 0,
+      mapel: mapelRes.count || 0,
+      kelas: kelasRes.count || 0
     });
   } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil data dashboard" });
+    console.log(err);
+
+    res.status(500).json({
+      error: "Gagal mengambil dashboard"
+    });
   }
 });
 
-// ===== JADWAL HARI INI =====
-router.get("/jadwal/hari-ini", requireAuth, async (req, res) => {
-  try {
-    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-    const hariIni = days[new Date().getDay()];
+/* =====================================================
+   GURU
+===================================================== */
 
-    const { data, error } = await supabase
-      .from("jadwal")
-      .select(`
-        id, hari, jam_mulai, jam_selesai, tipe, tanggal,
-        kelas:kelas_id(nama),
-        mapel:mapel_id(nama),
-        guru:guru_id(nama)
-      `)
-      .eq("hari", hariIni)
-      .eq("tipe", "Pelajaran");
-
-    if (error) throw error;
-
-    const result = (data || []).map((j) => ({
-      id: j.id,
-      tipe: j.tipe,
-      kelas: j.kelas?.nama ?? "-",
-      hari: j.hari,
-      tanggal: j.tanggal ?? null,
-      mapel: j.mapel?.nama ?? "-",
-      guru: j.guru?.nama ?? "-",
-      time: `${j.jam_mulai} - ${j.jam_selesai}`,
-    }));
-
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil jadwal hari ini" });
-  }
-});
-
-// ===== JADWAL MINGGU INI =====
-router.get("/jadwal/minggu-ini", requireAuth, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("jadwal")
-      .select(`
-        id, hari, jam_mulai, jam_selesai, tipe, tanggal,
-        kelas:kelas_id(nama),
-        mapel:mapel_id(nama),
-        guru:guru_id(nama)
-      `)
-      .order("id");
-
-    if (error) throw error;
-
-    const result = (data || []).map((j) => ({
-      id: j.id,
-      tipe: j.tipe,
-      kelas: j.kelas?.nama ?? "-",
-      hari: j.hari,
-      tanggal: j.tanggal ?? null,
-      mapel: j.mapel?.nama ?? "-",
-      guru: j.guru?.nama ?? "-",
-      time: `${j.jam_mulai} - ${j.jam_selesai}`,
-    }));
-
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil jadwal minggu ini" });
-  }
-});
-
-// ===== MURID =====
-router.get("/murid", requireAuth, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("murid")
-      .select(`id, nis, nama, status, created_at, kelas:kelas_id(nama)`)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    const result = (data || []).map((m) => ({
-      id: m.id,
-      nis: m.nis,
-      nama: m.nama,
-      kelas: m.kelas?.nama ? `Kelas ${m.kelas.nama}` : (m.kelas ?? "-"),
-      status: m.status,
-      tanggal: m.created_at
-        ? new Date(m.created_at).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
-        : "-",
-    }));
-
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil data murid" });
-  }
-});
-
-router.post("/murid", requireAuth, async (req, res) => {
-  try {
-    const { nis, nama, kelas_id, status } = req.body;
-    const { data, error } = await supabase
-      .from("murid")
-      .insert([{ nis, nama, kelas_id, status: status || "aktif" }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    res.json({ message: "Murid berhasil ditambahkan", data });
-  } catch (err) {
-    res.status(500).json({ error: err.message || "Gagal menambah murid" });
-  }
-});
-
-router.put("/murid/:id", requireAuth, async (req, res) => {
-  try {
-    const { nis, nama, kelas_id, status } = req.body;
-    const { data, error } = await supabase
-      .from("murid")
-      .update({ nis, nama, kelas_id, status })
-      .eq("id", req.params.id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    res.json({ message: "Murid berhasil diperbarui", data });
-  } catch (err) {
-    res.status(500).json({ error: "Gagal memperbarui murid" });
-  }
-});
-
-router.patch("/murid/:id/status", requireAuth, async (req, res) => {
-  try {
-    const { status } = req.body;
-    const { error } = await supabase
-      .from("murid")
-      .update({ status })
-      .eq("id", req.params.id);
-
-    if (error) throw error;
-    res.json({ message: "Status murid diperbarui" });
-  } catch (err) {
-    res.status(500).json({ error: "Gagal memperbarui status murid" });
-  }
-});
-
-// ===== GURU =====
 router.get("/guru", requireAuth, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("guru")
-      .select("id, nip, nama, telepon, status")
+      .select("id_guru,nama,nip,status")
       .order("nama");
 
     if (error) throw error;
-    res.json(data || []);
+
+    res.json(
+      (data || []).map(g => ({
+        id: g.id_guru,
+        nip: g.nip || "-",
+        nama: g.nama,
+        telepon: "-",
+        status: g.status || "aktif"
+      }))
+    );
   } catch (err) {
     res.status(500).json({ error: "Gagal mengambil data guru" });
   }
@@ -184,194 +136,1211 @@ router.get("/guru", requireAuth, async (req, res) => {
 
 router.post("/guru", requireAuth, async (req, res) => {
   try {
-    const { id, nip, nama, telepon, status } = req.body;
+    const { nip, nama, status } = req.body;
+
+    if (!nama || !nama.trim()) {
+      return res.status(400).json({
+        error: "Nama guru wajib diisi"
+      });
+    }
+
+    // ambil ID terakhir
+    const { data: lastGuru } = await supabase
+      .from("guru")
+      .select("id_guru")
+      .order("id_guru", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let newId = "G001";
+
+    if (lastGuru?.id_guru) {
+      const angka = parseInt(
+        lastGuru.id_guru.replace("G", "")
+      );
+
+      newId =
+        "G" +
+        String(angka + 1).padStart(3, "0");
+    }
+
+    const payload = {
+      id_guru: newId,
+      nama: nama.trim(),
+      nip: nip?.trim() || null,
+      status: status || "aktif"
+    };
+
     const { data, error } = await supabase
       .from("guru")
-      .insert([{ id, nip, nama, telepon, status: status || "Aktif" }])
+      .insert([payload])
       .select()
       .single();
 
     if (error) throw error;
-    res.json({ message: "Guru berhasil ditambahkan", data });
+
+    res.json({
+      message: "Guru berhasil ditambah",
+      data
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message || "Gagal menambah guru" });
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
-router.put("/guru/:id", requireAuth, async (req, res) => {
+router.delete("/guru/:id", requireAuth, async (req, res) => {
   try {
-    const { nip, nama, telepon, status } = req.body;
-    const { data, error } = await supabase
-      .from("guru")
-      .update({ nip, nama, telepon, status })
-      .eq("id", req.params.id)
-      .select()
-      .single();
+    const { id } = req.params;
+
+    // cek jadwal mengajar
+    const { data: jadwal1 } = await supabase
+      .from("jadwal")
+      .select("id_jadwal")
+      .eq("id_guru", id)
+      .limit(1);
+
+    // cek pengawas ujian
+    const { data: jadwal2 } = await supabase
+      .from("jadwal")
+      .select("id_jadwal")
+      .eq("pengawas_id", id)
+      .limit(1);
+
+    // cek absensi
+    const { data: absensi } = await supabase
+      .from("absensi")
+      .select("id")
+      .eq("id_guru", id)
+      .limit(1);
+
+    const dipakai =
+      (jadwal1 || []).length ||
+      (jadwal2 || []).length ||
+      (absensi || []).length;
+
+    if (dipakai) {
+      return res.status(400).json({
+        error: "Guru sudah dipakai pada data sistem dan tidak bisa dihapus"
+      });
+    }
+
+    // hapus akun profile terkait (optional)
+    await supabase.from("profiles").delete().eq("id_guru", id);
+
+    // hapus guru
+    const { error } = await supabase.from("guru").delete().eq("id_guru", id);
 
     if (error) throw error;
-    res.json({ message: "Guru berhasil diperbarui", data });
+
+    res.json({
+      success: true
+    });
   } catch (err) {
-    res.status(500).json({ error: "Gagal memperbarui guru" });
+    res.status(500).json({
+      error: "Gagal hapus guru"
+    });
+  }
+});
+
+/* =====================================================
+   KELAS
+===================================================== */
+
+router.get("/kelas", requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("kelas")
+      .select("id,nama,status")
+      .order("nama");
+
+    if (error) throw error;
+
+    const urut = (data || []).sort((a, b) => {
+      const pa = a.nama.match(/^(\d+)([A-Z]*)$/i) || [];
+
+      const pb = b.nama.match(/^(\d+)([A-Z]*)$/i) || [];
+
+      const angkaA = Number(pa[1] || 99);
+
+      const angkaB = Number(pb[1] || 99);
+
+      if (angkaA !== angkaB) return angkaA - angkaB;
+
+      return String(pa[2] || "").localeCompare(String(pb[2] || ""));
+    });
+
+    res.json(urut);
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      error: "Gagal mengambil data kelas"
+    });
+  }
+});
+
+/* ===============================
+   GET AKTIF
+=============================== */
+router.get("/kelas/aktif", requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("kelas")
+      .select("id,nama,status")
+      .eq("status", "aktif");
+
+    if (error) throw error;
+
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({
+      error: "Gagal mengambil kelas aktif"
+    });
+  }
+});
+
+/* ===============================
+   TAMBAH
+=============================== */
+router.post("/kelas", requireAuth, async (req, res) => {
+  try {
+    let { nama } = req.body;
+
+    nama = String(nama || "").trim().toUpperCase();
+
+    if (!nama) {
+      return res.status(400).json({
+        error: "Nama kelas wajib diisi"
+      });
+    }
+
+    /* validasi format kelas*/
+    const valid = /^[1-6][A-Z]?$/.test(nama);
+
+    if (!valid) {
+      return res.status(400).json({
+        error: "Format kelas tidak valid"
+      });
+    }
+
+    /* cek duplikat */
+    const { data: cek } = await supabase
+      .from("kelas")
+      .select("id")
+      .ilike("nama", nama)
+      .maybeSingle();
+
+    if (cek) {
+      return res.status(400).json({
+        error: "Kelas sudah ada"
+      });
+    }
+
+    const { error } = await supabase.from("kelas").insert([
+      {
+        nama,
+        status: "aktif"
+      }
+    ]);
+
+    if (error) throw error;
+
+    res.json({
+      message: "Kelas berhasil ditambah"
+    });
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      error: "Gagal tambah kelas"
+    });
+  }
+});
+
+/* ===============================
+   EDIT NAMA KELAS
+=============================== */
+router.patch("/kelas/:id", requireAuth, async (req, res) => {
+  try {
+    let { nama } = req.body;
+
+    nama = String(nama || "").trim().toUpperCase();
+
+    if (!/^[1-6][A-Z]?$/.test(nama)) {
+      return res.status(400).json({
+        error: "Format kelas tidak valid"
+      });
+    }
+
+    const { data: cek } = await supabase
+      .from("kelas")
+      .select("id")
+      .ilike("nama", nama)
+      .neq("id", req.params.id)
+      .maybeSingle();
+
+    if (cek) {
+      return res.status(400).json({
+        error: "Nama kelas sudah dipakai"
+      });
+    }
+
+    const { error } = await supabase
+      .from("kelas")
+      .update({
+        nama
+      })
+      .eq("id", req.params.id);
+
+    if (error) throw error;
+
+    res.json({
+      message: "Kelas berhasil diubah"
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Gagal edit kelas"
+    });
+  }
+});
+
+/* ===============================
+   STATUS
+=============================== */
+router.patch("/kelas/:id/status", requireAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const { error } = await supabase
+      .from("kelas")
+      .update({
+        status
+      })
+      .eq("id", req.params.id);
+
+    if (error) throw error;
+
+    res.json({
+      message: "Status kelas diubah"
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Gagal update status"
+    });
+  }
+});
+
+/* ===============================
+   HAPUS KELAS
+=============================== */
+router.delete("/kelas/:id", requireAuth, async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    /* cek dipakai murid */
+    const { count, error: errCheck } = await supabase
+      .from("kelas_siswa")
+      .select("*", {
+        count: "exact",
+        head: true
+      })
+      .eq("kelas", id)
+      .neq("status", "lulus");
+
+    if (errCheck) throw errCheck;
+
+    if (count > 0) {
+      return res.status(400).json({
+        error: "Kelas masih dipakai murid"
+      });
+    }
+
+    const { error } = await supabase.from("kelas").delete().eq("id", id);
+
+    if (error) throw error;
+
+    res.json({
+      message: "Kelas dihapus"
+    });
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      error: "Gagal hapus kelas"
+    });
+  }
+});
+/* =====================================================
+   MURID
+===================================================== */
+/* =====================================================
+   ROLLOVER TAHUN AJARAN
+===================================================== */
+
+router.patch("/murid/:nis", requireAuth, async (req, res) => {
+  try {
+    const { nis } = req.params;
+    const { nama, kelas, nama_ortu } = req.body;
+
+    const { error: e1 } = await supabase
+      .from("murid")
+      .update({
+        nama,
+        nama_ortu
+      })
+      .eq("nis", nis);
+
+    if (e1) throw e1;
+
+    const { error: e2 } = await supabase
+      .from("kelas_siswa")
+      .update({
+        kelas
+      })
+      .eq("nis", nis);
+
+    if (e2) throw e2;
+
+    res.json({
+      success: true,
+      message: "Data murid berhasil diupdate"
+    });
+
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+router.post("/tahun-ajaran/rollover", requireAuth, async (req, res) => {
+  try {
+    const { tahunBaru, semester1, semester2 } = req.body;
+
+    /* ===============================
+         VALIDASI DASAR
+      =============================== */
+    if (!tahunBaru) {
+      return res.status(400).json({
+        error: "Tahun ajaran baru wajib dipilih"
+      });
+    }
+
+    if (
+      !semester1 ||
+      !semester1.mulai ||
+      !semester1.selesai ||
+      !semester2 ||
+      !semester2.mulai ||
+      !semester2.selesai
+    ) {
+      return res.status(400).json({
+        error: "Tanggal semester belum lengkap"
+      });
+    }
+
+    /* ===============================
+         CEK TAHUN AKTIF LAMA
+      =============================== */
+    const { data: tahunAktif, error: errTahunAktif } = await supabase
+      .from("tahun_ajaran")
+      .select("id")
+      .eq("aktif", true)
+      .single();
+
+    if (errTahunAktif || !tahunAktif) {
+      return res.status(400).json({
+        error: "Tahun ajaran aktif tidak ditemukan"
+      });
+    }
+
+    const { data: semesterAktif2, error: errSemester } = await supabase
+      .from("semester")
+      .select("tanggal_selesai")
+      .eq("tahun_id", tahunAktif.id)
+      .eq("nama", "Genap")
+      .single();
+
+    if (errSemester || !semesterAktif2) {
+      return res.status(400).json({
+        error: "Semester Genap tahun aktif tidak ditemukan"
+      });
+    }
+
+    const hariIni = new Date();
+    const selesai = new Date(semesterAktif2.tanggal_selesai);
+
+    if (hariIni <= selesai) {
+      return res.status(400).json({
+        error: "Rollover hanya bisa setelah Semester Genap selesai"
+      });
+    }
+
+    if (tahunAktif.id === tahunBaru) {
+      return res.status(400).json({
+        error: "Tahun baru tidak boleh sama"
+      });
+    }
+
+    /* ===============================
+         CEK TAHUN BARU SUDAH ADA?
+      =============================== */
+    const { data: cekTahun } = await supabase
+      .from("tahun_ajaran")
+      .select("id")
+      .eq("id", tahunBaru)
+      .maybeSingle();
+
+    if (cekTahun) {
+      return res.status(400).json({
+        error: "Tahun ajaran baru sudah ada"
+      });
+    }
+
+    /* ===============================
+         AMBIL DATA SISWA TAHUN LAMA
+      =============================== */
+    const { data: siswaLama, error: errSiswa } = await supabase
+      .from("kelas_siswa")
+      .select("nis,kelas,status")
+      .eq("tahun_id", tahunAktif.id)
+      .eq("status", "aktif");
+
+    if (errSiswa) throw errSiswa;
+
+    /* ===============================
+         NONAKTIFKAN TAHUN LAMA
+      =============================== */
+    await supabase
+      .from("tahun_ajaran")
+      .update({
+        aktif: false
+      })
+      .eq("id", tahunAktif.id);
+
+    /* ===============================
+         BUAT TAHUN BARU
+      =============================== */
+    await supabase.from("tahun_ajaran").insert([
+      {
+        id: tahunBaru,
+        aktif: true
+      }
+    ]);
+
+    /* ===============================
+         BUAT SEMESTER
+      =============================== */
+    await supabase.from("semester").insert([
+      {
+        id: tahunBaru + "-1",
+        tahun_id: tahunBaru,
+        nama: "Ganjil",
+        tanggal_mulai: semester1.mulai,
+        tanggal_selesai: semester1.selesai,
+        aktif: true
+      },
+      {
+        id: tahunBaru + "-2",
+        tahun_id: tahunBaru,
+        nama: "Genap",
+        tanggal_mulai: semester2.mulai,
+        tanggal_selesai: semester2.selesai,
+        aktif: false
+      }
+    ]);
+
+    /* ===============================
+         NAIK KELAS
+      =============================== */
+    const insertBaru = [];
+    let totalNaik = 0;
+    let totalLulus = 0;
+
+    for (const s of siswaLama) {
+      const kelasNow = Number(s.kelas);
+
+      if (kelasNow >= 6) {
+        /* kelas akhir -> lulus permanen */
+        await supabase
+          .from("kelas_siswa")
+          .update({
+            status: "lulus"
+          })
+          .eq("nis", s.nis)
+          .eq("tahun_id", tahunAktif.id);
+
+        totalLulus++;
+      } else {
+        insertBaru.push({
+          nis: s.nis,
+          kelas: kelasNow + 1,
+          tahun_id: tahunBaru,
+          status: "aktif"
+        });
+
+        totalNaik++;
+      }
+    }
+
+    if (insertBaru.length > 0) {
+      await supabase.from("kelas_siswa").insert(insertBaru);
+    }
+
+    /* ===============================
+         RESPONSE
+      =============================== */
+    res.json({
+      message: "Rollover berhasil",
+      tahunLama: tahunAktif.id,
+      tahunBaru,
+      naikKelas: totalNaik,
+      lulus: totalLulus
+    });
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      error: "Gagal rollover tahun ajaran"
+    });
+  }
+});
+
+router.get("/murid", requireAuth, async (req, res) => {
+  try {
+    const { data: tahunAktif, error: errTahun } = await supabase
+      .from("tahun_ajaran")
+      .select("id")
+      .eq("aktif", true)
+      .single();
+
+    if (errTahun) throw errTahun;
+
+    const { data, error } = await supabase
+      .from("kelas_siswa")
+      .select(
+        `
+          nis,
+          kelas,
+          status,
+          murid (
+            nama,
+            nama_ortu
+          )
+        `
+      )
+      .eq("tahun_id", tahunAktif.id)
+      .order("kelas", { ascending: true });
+
+    if (error) throw error;
+
+    const hasil = (data || []).map(row => ({
+      nis: row.nis,
+      nama: row.murid?.nama || "-",
+      nama_ortu: row.murid?.nama_ortu || "-",
+      kelas: row.kelas,
+      status: row.status
+    }));
+
+    res.json(hasil);
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      error: "Gagal mengambil data murid"
+    });
+  }
+});
+
+router.post("/murid", requireAuth, async (req, res) => {
+  try {
+    const { nis, nama, kelas_id, status, nama_ortu } = req.body;
+
+    const { error: err1 } = await supabase
+      .from("murid")
+      .upsert([{ nis, nama, nama_ortu: nama_ortu || null }]);
+
+    if (err1) throw err1;
+
+    const tahun = await supabase
+      .from("tahun_ajaran")
+      .select("id")
+      .eq("aktif", true)
+      .single();
+
+    const tahunId = (tahun.data && tahun.data.id) || null;
+
+    const { error: err2 } = await supabase.from("kelas_siswa").insert([
+      {
+        nis,
+        kelas: Number(kelas_id),
+        tahun_id: tahunId,
+        status: status || "aktif"
+      }
+    ]);
+
+    if (err2) throw err2;
+
+    res.json({ message: "Murid berhasil ditambah" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/murid/lulus", requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("kelas_siswa")
+      .select(
+        `
+            nis,
+            kelas,
+            tahun_id,
+            murid(nama)
+          `
+      )
+      .eq("status", "lulus")
+      .order("tahun_id", {
+        ascending: false
+      });
+
+    if (error) throw error;
+
+    res.json(
+      (data || []).map(x => ({
+        nis: x.nis,
+        nama: (x.murid && x.murid.nama) || "-",
+        kelas: x.kelas,
+        tahun: x.tahun_id,
+        status: "lulus"
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({
+      error: "Gagal ambil data lulus"
+    });
   }
 });
 
 router.patch("/guru/:id/status", requireAuth, async (req, res) => {
   try {
+    const { id } = req.params;
     const { status } = req.body;
-    const { error } = await supabase
+
+    const { data, error } = await supabase
       .from("guru")
       .update({ status })
-      .eq("id", req.params.id);
-
-    if (error) throw error;
-    res.json({ message: "Status guru diperbarui" });
-  } catch (err) {
-    res.status(500).json({ error: "Gagal memperbarui status guru" });
-  }
-});
-
-// ===== KELAS =====
-router.get("/kelas", requireAuth, async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("kelas")
-      .select("id, nama, status")
-      .order("nama");
-
-    if (error) throw error;
-    res.json(data || []);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil data kelas" });
-  }
-});
-
-router.post("/kelas", requireAuth, async (req, res) => {
-  try {
-    const { nama } = req.body;
-    const { data, error } = await supabase
-      .from("kelas")
-      .insert([{ nama, status: "aktif" }])
+      .eq("id_guru", id)
       .select()
       .single();
 
     if (error) throw error;
-    res.json({ message: "Kelas berhasil ditambahkan", data });
+
+    res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message || "Gagal menambah kelas" });
+    res.status(500).json({
+      error: "Gagal ubah status guru"
+    });
   }
 });
 
-router.patch("/kelas/:id/status", requireAuth, async (req, res) => {
+router.put("/guru/:id", requireAuth, async (req, res) => {
   try {
-    const { status } = req.body;
-    const { error } = await supabase
-      .from("kelas")
-      .update({ status })
-      .eq("id", req.params.id);
+    const { id } = req.params;
+    const { nama, nip } = req.body;
+
+    const { data, error } = await supabase
+      .from("guru")
+      .update({
+        nama,
+        nip
+      })
+      .eq("id_guru", id)
+      .select()
+      .single();
 
     if (error) throw error;
-    res.json({ message: "Status kelas diperbarui" });
+
+    res.json(data);
   } catch (err) {
-    res.status(500).json({ error: "Gagal memperbarui status kelas" });
+    console.log(err);
+
+    res.status(500).json({
+      error: "Gagal update guru"
+    });
   }
 });
 
-// ===== MAPEL =====
+router.patch("/murid/:id", requireAuth, async (req, res) => {
+  try {
+    const { nama, kelas } = req.body;
+
+    const nis = req.params.id;
+
+    const { error: err1 } = await supabase
+      .from("murid")
+      .update({
+        nama,
+        nama_ortu
+      })
+      .eq("nis", nis);
+
+    if (err1) throw err1;
+
+    const { error: err2 } = await supabase
+      .from("kelas_siswa")
+      .update({
+        kelas: Number(kelas)
+      })
+      .eq("nis", nis);
+
+    if (err2) throw err2;
+
+    res.json({
+      message: "Murid berhasil diupdate"
+    });
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      error: "Gagal update murid"
+    });
+  }
+});
+
+router.put("/mapel/:id", requireAuth, async (req, res) => {
+  try {
+    const { nama } = req.body;
+
+    const { error } = await supabase
+      .from("mapel")
+      .update({
+        nama: nama.trim()
+      })
+      .eq("id_mapel", req.params.id);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: "Mapel berhasil diupdate"
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Gagal update mapel"
+    });
+  }
+});
+
+router.delete("/murid/:id", requireAuth, async (req, res) => {
+  try {
+    const nis = req.params.id;
+
+    await supabase.from("kelas_siswa").delete().eq("nis", nis);
+
+    await supabase.from("murid").delete().eq("nis", nis);
+
+    res.json({
+      message: "Murid dihapus"
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Gagal hapus murid"
+    });
+  }
+});
+
+router.post(
+  "/murid/upload",
+  requireAuth,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          error: "File wajib diupload"
+        });
+      }
+
+      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      const rows = XLSX.utils.sheet_to_json(sheet);
+
+      let gagal = 0;
+      let berhasil = 0;
+
+      const tahun = await supabase
+        .from("tahun_ajaran")
+        .select("id")
+        .eq("aktif", true)
+        .single();
+
+      const tahunId = (tahun.data && tahun.data.id) || null;
+      for (const row of rows) {
+        const nis = String(row.NIS || "").trim();
+
+        const nama = String(row.NAMA || "").trim();
+
+        const namaOrtu = String(
+          row.NAMA_ORANG_TUA || ""
+        ).trim();
+
+        const namaKelas = String(
+          row.KELAS || ""
+        ).trim();
+
+        // VALIDASI WAJIB
+        if (!nis || !nama || !namaKelas) {
+          gagal++;
+          continue;
+        }
+
+        const { data: kelasDb } = await supabase
+          .from("kelas")
+          .select("id")
+          .eq("nama", namaKelas)
+          .eq("status", "aktif")
+          .single();
+
+        if (!kelasDb) {
+          gagal++;
+          continue;
+        }
+
+        await supabase.from("murid").upsert([
+          {
+            nis,
+            nama,
+            nama_ortu: namaOrtu || null
+          }
+        ]);
+
+        await supabase.from("kelas_siswa").upsert([
+          {
+            nis,
+            kelas: kelasDb.id,
+            tahun_id: tahunId,
+            status: "aktif"
+          }
+        ]);
+
+        berhasil++;
+      }
+
+      res.json({
+        message: "Upload berhasil"
+      });
+    } catch (err) {
+      console.log(err);
+
+      res.status(500).json({
+        error: "Gagal upload murid"
+      });
+    }
+  }
+);
+
+router.get("/tahun-ajaran/aktif", requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("tahun_ajaran")
+      .select("id, aktif")
+      .eq("aktif", true)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      return res.json({
+        id: "-"
+      });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.log("ERROR:", err);
+
+    res.status(500).json({
+      error: "Gagal mengambil tahun aktif"
+    });
+  }
+});
+
+router.patch("/murid/:nis/status", requireAuth, async (req, res) => {
+  try {
+    const { nis } = req.params;
+    const { status } = req.body;
+
+    const { error } = await supabase
+      .from("kelas_siswa")
+      .update({ status })
+      .eq("nis", nis);
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+/* =====================================================
+   MAPEL
+===================================================== */
+
 router.get("/mapel", requireAuth, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("mapel")
-      .select("id, nama, status")
+      .select("id_mapel,nama,status")
       .order("nama");
 
     if (error) throw error;
-    res.json(data || []);
+
+    res.json(
+      (data || []).map(m => ({
+        id: m.id_mapel,
+        nama: m.nama,
+        status: m.status
+      }))
+    );
   } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil data mapel" });
+    res.status(500).json({ error: "Gagal mengambil mapel" });
   }
 });
 
 router.post("/mapel", requireAuth, async (req, res) => {
   try {
     const { nama } = req.body;
+
+    const id = "MP" + Date.now();
+
     const { data, error } = await supabase
       .from("mapel")
-      .insert([{ nama, status: "aktif" }])
+      .insert([
+        {
+          id_mapel: id,
+          nama,
+          status: "aktif"
+        }
+      ])
       .select()
       .single();
 
     if (error) throw error;
-    res.json({ message: "Mapel berhasil ditambahkan", data });
+
+    res.json({ message: "Mapel berhasil ditambah", data });
   } catch (err) {
-    res.status(500).json({ error: err.message || "Gagal menambah mapel" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ===== JADWAL (CRUD) =====
+router.patch("/mapel/:id/status", requireAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const { error } = await supabase
+      .from("mapel")
+      .update({ status })
+      .eq("id_mapel", req.params.id);
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Gagal update status" });
+  }
+});
+
+router.delete("/mapel/:id", requireAuth, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from("mapel")
+      .delete()
+      .eq("id_mapel", req.params.id);
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Gagal hapus mapel" });
+  }
+});
+
+/* =====================================================
+   JADWAL
+===================================================== */
+
 router.get("/jadwal", requireAuth, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("jadwal")
-      .select(`
-        id, hari, jam_mulai, jam_selesai, tipe, tanggal,
-        kelas:kelas_id(id, nama),
-        mapel:mapel_id(id, nama),
-        guru:guru_id(id, nama)
-      `)
-      .order("hari");
+      .select(
+        `
+        id_jadwal,
+        kelas,
+        hari,
+        mulai,
+        selesai,
+        jenis,
+        tanggal,
+        status,
+        mapel:id_mapel ( nama ),
+        guru:id_guru ( nama )
+      `
+      )
+      .order("id_jadwal");
 
     if (error) throw error;
 
-    const result = (data || []).map((j) => ({
-      id: j.id,
+    const hasil = (data || []).map(j => ({
+      id: j.id_jadwal,
+      kelas: j.kelas,
       hari: j.hari,
-      rentangWaktu: `${j.jam_mulai} - ${j.jam_selesai}`,
-      kelas: j.kelas?.nama ?? "-",
-      kelas_id: j.kelas?.id,
-      mapel: j.mapel?.nama ?? "-",
-      mapel_id: j.mapel?.id,
-      guru: j.guru?.nama ?? "-",
-      guru_id: j.guru?.id,
-      tipe: j.tipe,
+      mulai: j.mulai,
+      selesai: j.selesai,
+      tipe: j.jenis,
       tanggal: j.tanggal,
+      status: j.status,
+      mapel: (j.mapel && j.mapel.nama) || "-",
+      guru: (j.guru && j.guru.nama) || "-",
+      rentangWaktu:
+        ((j.mulai && j.mulai.slice(0, 5)) || "--:--") +
+        " - " +
+        ((j.selesai && j.selesai.slice(0, 5)) || "--:--")
     }));
 
-    res.json(result);
+    res.json(hasil);
   } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil data jadwal" });
+    console.log("GET jadwal error:", err);
+    res.status(500).json({
+      error: "Gagal mengambil jadwal"
+    });
   }
 });
 
 router.post("/jadwal", requireAuth, async (req, res) => {
   try {
-    const { hari, jam_mulai, jam_selesai, kelas_id, mapel_id, guru_id, tipe, tanggal } = req.body;
-    const { data, error } = await supabase
-      .from("jadwal")
-      .insert([{ hari, jam_mulai, jam_selesai, kelas_id, mapel_id, guru_id, tipe: tipe || "Pelajaran", tanggal }])
-      .select()
+    const {
+      jenis,
+      kelas,
+      mapel,
+      guru,
+      hari,
+      tanggal,
+      mulai,
+      selesai
+    } = req.body;
+
+    /* ambil tahun aktif */
+    const { data: tahunAktif, error: errTahun } = await supabase
+      .from("tahun_ajaran")
+      .select("id")
+      .eq("aktif", true)
       .single();
 
+    if (errTahun || !tahunAktif) throw errTahun;
+
+    const idBaru = "J" + Date.now();
+
+    const { error } = await supabase.from("jadwal").insert([
+      {
+        id_jadwal: idBaru,
+        kelas: Number(kelas),
+        hari: jenis === "pelajaran" ? hari : null,
+        mulai,
+        selesai,
+        tahun_id: tahunAktif.id,
+        jenis,
+        tanggal: jenis === "ujian" ? tanggal : null,
+        pengawas_id: guru,
+        id_mapel: mapel,
+        id_guru: guru,
+        status: "aktif"
+      }
+    ]);
+
     if (error) throw error;
-    res.json({ message: "Jadwal berhasil ditambahkan", data });
+
+    res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message || "Gagal menambah jadwal" });
+    console.log("POST jadwal:", err);
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+router.put("/jadwal/:id", requireAuth, async (req, res) => {
+  try {
+    const {
+      jenis,
+      kelas,
+      mapel,
+      guru,
+      hari,
+      tanggal,
+      mulai,
+      selesai
+    } = req.body;
+
+    const { error } = await supabase
+      .from("jadwal")
+      .update({
+        kelas: Number(kelas),
+        hari: jenis === "pelajaran" ? hari : null,
+        mulai,
+        selesai,
+        jenis,
+        tanggal: jenis === "ujian" ? tanggal : null,
+        pengawas_id: guru,
+        id_mapel: mapel,
+        id_guru: guru
+      })
+      .eq("id_jadwal", req.params.id);
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.log("PUT jadwal:", err);
+
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
-router.put("/jadwal/:id", requireAuth, async (req, res) => {
+router.patch("/jadwal/:id/status", requireAuth, async (req, res) => {
   try {
-    const { hari, jam_mulai, jam_selesai, kelas_id, mapel_id, guru_id, tipe, tanggal } = req.body;
-    const { data, error } = await supabase
+    const { status } = req.body;
+
+    const { error } = await supabase
       .from("jadwal")
-      .update({ hari, jam_mulai, jam_selesai, kelas_id, mapel_id, guru_id, tipe, tanggal })
-      .eq("id", req.params.id)
-      .select()
-      .single();
+      .update({ status })
+      .eq("id_jadwal", req.params.id);
 
     if (error) throw error;
-    res.json({ message: "Jadwal berhasil diperbarui", data });
+
+    res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Gagal memperbarui jadwal" });
+    console.log("PATCH jadwal:", err);
+    res.status(500).json({
+      error: "Gagal ubah status"
+    });
   }
 });
 
@@ -380,96 +1349,157 @@ router.delete("/jadwal/:id", requireAuth, async (req, res) => {
     const { error } = await supabase
       .from("jadwal")
       .delete()
-      .eq("id", req.params.id);
+      .eq("id_jadwal", req.params.id);
 
     if (error) throw error;
+
     res.json({ message: "Jadwal berhasil dihapus" });
   } catch (err) {
     res.status(500).json({ error: "Gagal menghapus jadwal" });
   }
 });
 
-// ===== AKUN  =====
-router.get("/akun/guru", requireAuth, async (req, res) => {
+/* =====================================================
+   DASHBOARD JADWAL
+===================================================== */
+
+router.get("/jadwal/hari-ini", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, nama, nip, email, status")
-      .eq("role", "guru")
-      .order("nama");
+    const hariList = [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu"
+    ];
+
+    const now = new Date();
+    const hariIni = hariList[now.getDay()];
+
+    const tgl = now.toISOString().slice(0, 10);
+
+    const { data: jadwal, error } = await supabase
+      .from("jadwal")
+      .select("*")
+      .eq("status", "aktif");
 
     if (error) throw error;
 
-    const result = (data || []).map((p) => ({
-      id: p.id,
-      nama: p.nama,
-      nip: p.nip ?? "-",
-      email: p.email ?? "-",
-      aktif: p.status === "aktif",
-    }));
+    const { data: guru } = await supabase.from("guru").select("id_guru,nama");
 
-    res.json(result);
+    const { data: mapel } = await supabase
+      .from("mapel")
+      .select("id_mapel,nama");
+
+    const hasil = (jadwal || [])
+      .filter(
+        j =>
+          (j.jenis === "pelajaran" && j.hari === hariIni) ||
+          (j.jenis === "ujian" && j.tanggal === tgl)
+      )
+      .map(j => {
+        const g = guru.find(x => x.id_guru === j.id_guru);
+
+        const m = mapel.find(x => x.id_mapel === j.id_mapel);
+
+        return {
+          id: j.id_jadwal,
+          tipe: j.jenis,
+          kelas: `Kelas ${j.kelas}`,
+          hari: hariIni,
+          mapel: (m && m.nama) || "-",
+          guru: (g && g.nama) || "-",
+          time: `${j.mulai} - ${j.selesai}`
+        };
+      });
+
+    res.json(hasil);
   } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil akun guru" });
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
-router.get("/akun/ortu", requireAuth, async (req, res) => {
+router.get("/jadwal/minggu-ini", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(`id, nama, email, status, murid:murid_id(nama, kelas:kelas_id(nama))`)
-      .in("role", ["ortu", "orangtua"])
-      .order("nama");
+    const now = new Date();
 
-    if (error) throw error;
+    const day = now.getDay();
 
-    const result = (data || []).map((p) => ({
-      id: p.id,
-      anak: p.murid?.nama ?? p.nama ?? "-",
-      kelas: p.murid?.kelas?.nama ? `Kelas ${p.murid.kelas.nama}` : "-",
-      email: p.email ?? "-",
-      aktif: p.status === "aktif",
-    }));
+    const diff = day === 0 ? -6 : 1 - day;
 
-    res.json(result);
+    const senin = new Date(now);
+
+    senin.setDate(now.getDate() + diff);
+
+    const minggu = new Date(senin);
+
+    minggu.setDate(senin.getDate() + 6);
+
+    const start = senin.toISOString().slice(0, 10);
+
+    const end = minggu.toISOString().slice(0, 10);
+
+    const hariMap = [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu"
+    ];
+
+    const { data: jadwal } = await supabase
+      .from("jadwal")
+      .select("*")
+      .eq("status", "aktif");
+
+    const { data: guru } = await supabase.from("guru").select("id_guru,nama");
+
+    const { data: mapel } = await supabase
+      .from("mapel")
+      .select("id_mapel,nama");
+
+    const hasil = (jadwal || [])
+      .filter(j => {
+        if (j.jenis === "pelajaran") return true;
+
+        if (j.jenis === "ujian" && j.tanggal >= start && j.tanggal <= end)
+          return true;
+
+        return false;
+      })
+      .map(j => {
+        let hari = j.hari;
+
+        if (j.jenis === "ujian") {
+          hari = hariMap[new Date(j.tanggal).getDay()];
+        }
+
+        const g = guru.find(x => x.id_guru === j.id_guru);
+
+        const m = mapel.find(x => x.id_mapel === j.id_mapel);
+
+        return {
+          id: j.id_jadwal,
+          tipe: j.jenis,
+          kelas: `Kelas ${j.kelas}`,
+          hari,
+          mapel: (m && m.nama) || "-",
+          guru: (g && g.nama) || "-",
+          time: `${j.mulai.slice(0, 5)} - ${j.selesai.slice(0, 5)}`
+        };
+      });
+
+    res.json(hasil);
   } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil akun ortu" });
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
-
-router.put("/akun/:id/email", requireAuth, async (req, res) => {
-  try {
-    const { email } = req.body;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ email })
-      .eq("id", req.params.id);
-
-    if (error) throw error;
-    res.json({ message: "Email berhasil diperbarui" });
-  } catch (err) {
-    res.status(500).json({ error: "Gagal memperbarui email" });
-  }
-});
-
-router.patch("/akun/:id/status", requireAuth, async (req, res) => {
-  try {
-    const { status } = req.body;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ status })
-      .eq("id", req.params.id);
-
-    if (error) throw error;
-    res.json({ message: "Status akun diperbarui" });
-  } catch (err) {
-    res.status(500).json({ error: "Gagal memperbarui status akun" });
-  }
-});
-
-router.get("/", (req, res) => {
-  res.json({ message: "admin aktif" });
-});
-
 module.exports = router;

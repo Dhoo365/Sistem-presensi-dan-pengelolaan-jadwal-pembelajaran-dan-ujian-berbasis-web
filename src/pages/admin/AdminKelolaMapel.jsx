@@ -1,238 +1,512 @@
-import React, { useState, useEffect } from 'react';
-import api from '../../lib/axios';
+import React, { useEffect, useState } from "react";
+import api from "../../lib/axios";
+import {
+  BookOpen,
+  Search,
+  Plus,
+  Pencil,
+  Power,
+  Trash2,
+  X,
+  Check,
+} from "lucide-react";
 
 const AdminKelolaMapel = () => {
-  const [jadwalList, setJadwalList] = useState([]);
-  const [kelasList, setKelasList] = useState([]);
-  const [mapelList, setMapelList] = useState([]);
-  const [guruList, setGuruList] = useState([]);
+  const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Form state
-  const [formHari, setFormHari] = useState('');
-  const [formMapel, setFormMapel] = useState('');
-  const [formKelas, setFormKelas] = useState('');
-  const [formGuru, setFormGuru] = useState('');
-  const [formJamMulai, setFormJamMulai] = useState('');
-  const [formJamSelesai, setFormJamSelesai] = useState('');
-  const [formTipe, setFormTipe] = useState('Pelajaran Harian');
+  const [nama, setNama] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const fetchAll = () => {
-    setLoading(true);
-    Promise.all([
-      api.get('/admin/jadwal'),
-      api.get('/admin/kelas'),
-      api.get('/admin/mapel'),
-      api.get('/admin/guru'),
-    ])
-      .then(([j, k, m, g]) => {
-        setJadwalList(j.data);
-        setKelasList(k.data);
-        setMapelList(m.data);
-        setGuruList(g.data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const [filter, setFilter] = useState("semua");
+  const [search, setSearch] = useState("");
+
+  const [showEdit, setShowEdit] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+
+  const [editData, setEditData] = useState({
+    id: "",
+    nama: "",
+  });
+
+  /* =========================
+     LOAD DATA
+  ========================= */
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/admin/mapel");
+      setList(res.data || []);
+    } catch {
+      alert("Gagal mengambil data mapel");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const handleSimpan = async () => {
-    if (!formHari || !formMapel || !formKelas || !formGuru) {
-      return alert('Lengkapi semua field');
+  /* =========================
+     TAMBAH
+  ========================= */
+  const tambahMapel = async () => {
+    if (!nama.trim()) {
+      return alert("Nama mapel wajib diisi");
     }
-    setSaving(true);
+
     try {
-      await api.post('/admin/jadwal', {
-        hari: formHari,
-        jam_mulai: formJamMulai || '07:00',
-        jam_selesai: formJamSelesai || '08:30',
-        kelas_id: formKelas,
-        mapel_id: formMapel,
-        guru_id: formGuru,
-        tipe: formTipe === 'Ujian' ? 'Ujian' : 'Pelajaran',
+      setSaving(true);
+
+      await api.post("/admin/mapel", {
+        nama: nama.trim(),
       });
-      setFormHari(''); setFormMapel(''); setFormKelas('');
-      setFormGuru(''); setFormJamMulai(''); setFormJamSelesai('');
-      fetchAll();
+
+      setNama("");
+      loadData();
     } catch (err) {
-      alert(err.response?.data?.error || 'Gagal menyimpan jadwal');
+      alert(
+        err.response?.data?.error ||
+          "Gagal tambah mapel"
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  const handleNonaktifkan = async (id) => {
+  /* =========================
+     EDIT
+  ========================= */
+  const bukaEdit = (item) => {
+    setEditData({
+      id: item.id,
+      nama: item.nama,
+    });
+
+    setShowEdit(true);
+  };
+
+  const simpanEdit = async () => {
+    if (!editData.nama.trim()) {
+      return alert("Nama mapel wajib diisi");
+    }
+
     try {
-      await api.delete(`/admin/jadwal/${id}`);
-      fetchAll();
+      setEditSaving(true);
+
+      await api.put(
+        `/admin/mapel/${editData.id}`,
+        {
+          nama: editData.nama.trim(),
+        }
+      );
+
+      setShowEdit(false);
+      loadData();
     } catch {
-      alert('Gagal menghapus jadwal');
+      alert("Gagal update mapel");
+    } finally {
+      setEditSaving(false);
     }
   };
 
+  /* =========================
+     STATUS
+  ========================= */
+  const ubahStatus = async (
+    id,
+    status
+  ) => {
+    try {
+      await api.patch(
+        `/admin/mapel/${id}/status`,
+        { status }
+      );
+
+      loadData();
+    } catch {
+      alert("Gagal update status");
+    }
+  };
+
+  /* =========================
+     HAPUS
+  ========================= */
+  const hapusMapel = async (id) => {
+    const yakin = window.confirm(
+      "Hapus mapel ini?"
+    );
+
+    if (!yakin) return;
+
+    try {
+      await api.delete(
+        `/admin/mapel/${id}`
+      );
+
+      loadData();
+    } catch {
+      alert("Gagal hapus mapel");
+    }
+  };
+
+  /* =========================
+     FILTER
+  ========================= */
+  const hasil = list.filter((item) => {
+    const cocokFilter =
+      filter === "semua"
+        ? true
+        : item.status === filter;
+
+    const cocokSearch =
+      item.nama
+        .toLowerCase()
+        .includes(
+          search.toLowerCase()
+        ) ||
+      item.id
+        .toLowerCase()
+        .includes(
+          search.toLowerCase()
+        );
+
+    return (
+      cocokFilter &&
+      cocokSearch
+    );
+  });
+
   return (
-    <div className="p-6 bg-gray-100 min-h-screen font-sans">
+    <>
+    <section className="space-y-6">
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-          Tambah Jadwal Baru
-        </h2>
+      {/* TAMBAH MAPEL */}
+      <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <select
-            value={formTipe}
-            onChange={(e) => setFormTipe(e.target.value)}
-            className="border border-gray-300 rounded-md p-2.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-gray-400 appearance-none bg-white"
-          >
-            <option>Pelajaran Harian</option>
-            <option value="Ujian">Ujian</option>
-          </select>
+        <div className="flex flex-col lg:flex-row lg:items-end gap-4">
 
-          <select
-            value={formMapel}
-            onChange={(e) => setFormMapel(e.target.value)}
-            className="border border-gray-300 rounded-md p-2.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-gray-400 appearance-none bg-white"
-          >
-            <option value="">-- Pilih Mapel --</option>
-            {mapelList.map((m) => (
-              <option key={m.id} value={m.id}>{m.nama}</option>
-            ))}
-          </select>
+          <div className="flex-1">
 
-          <select
-            value={formKelas}
-            onChange={(e) => setFormKelas(e.target.value)}
-            className="border border-gray-300 rounded-md p-2.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-gray-400 appearance-none bg-white"
-          >
-            <option value="">-- Pilih Kelas --</option>
-            {kelasList.map((k) => (
-              <option key={k.id} value={k.id}>{k.nama}</option>
-            ))}
-          </select>
+            <h3 className="text-xl font-bold text-gray-800">
+              Tambah Mata Pelajaran
+            </h3>
 
-          <select
-            value={formHari}
-            onChange={(e) => setFormHari(e.target.value)}
-            className="border border-gray-300 rounded-md p-2.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-gray-400 appearance-none bg-white"
-          >
-            <option value="">-- Pilih Hari --</option>
-            {["Senin","Selasa","Rabu","Kamis","Jumat"].map((h) => (
-              <option key={h}>{h}</option>
-            ))}
-          </select>
-        </div>
+            <p className="text-sm text-gray-500 mt-1 mb-4">
+              Tambahkan mata pelajaran baru ke sistem.
+            </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <select
-            value={formGuru}
-            onChange={(e) => setFormGuru(e.target.value)}
-            className="border border-gray-300 rounded-md p-2.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-gray-400 appearance-none bg-white"
-          >
-            <option value="">-- Pilih Guru --</option>
-            {guruList.map((g) => (
-              <option key={g.id} value={g.id}>{g.nama}</option>
-            ))}
-          </select>
-
-          <div className="col-span-2 flex items-center gap-2">
             <input
-              type="time"
-              value={formJamMulai}
-              onChange={(e) => setFormJamMulai(e.target.value)}
-              className="border border-gray-300 rounded-md p-2.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-gray-400"
+              type="text"
+              value={nama}
+              onChange={(e) =>
+                setNama(e.target.value)
+              }
+              placeholder="Contoh: Matematika"
+              className="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#715445]/20"
             />
-            <span className="text-sm text-gray-500 px-2">Sampai</span>
-            <input
-              type="time"
-              value={formJamSelesai}
-              onChange={(e) => setFormJamSelesai(e.target.value)}
-              className="border border-gray-300 rounded-md p-2.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-gray-400"
-            />
+
           </div>
-        </div>
 
-        <button
-          onClick={handleSimpan}
-          disabled={saving}
-          className="bg-[#6B5048] hover:bg-[#5a423a] text-white text-sm font-medium py-2.5 px-6 rounded-md transition-colors disabled:opacity-60"
-        >
-          {saving ? 'Menyimpan...' : 'Simpan Jadwal'}
-        </button>
+          <button
+            onClick={tambahMapel}
+            disabled={saving}
+            className="h-[48px] px-6 bg-[#715445] hover:bg-[#5E4236] text-white rounded-2xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition"
+          >
+            <Plus size={18} />
+
+            {saving
+              ? "Menyimpan..."
+              : "Tambah Mapel"}
+          </button>
+
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            Daftar Jadwal
-          </h2>
+      {/* TABLE */}
+      <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
 
-          <div className="flex flex-wrap items-center gap-2 text-sm border border-gray-200 rounded-lg p-1 bg-gray-50">
-            <button className="px-4 py-1.5 text-green-600 bg-green-50 border border-green-200 rounded-md font-medium">Aktif</button>
-            <button className="px-4 py-1.5 text-red-500 hover:bg-gray-100 rounded-md font-medium">Nonaktif</button>
-            <button className="px-4 py-1.5 text-blue-500 hover:bg-gray-100 rounded-md font-medium">Semua</button>
-            <div className="w-px h-6 bg-gray-300 mx-1"></div>
-            <button className="px-4 py-1.5 bg-[#3B82F6] text-white rounded-md font-medium">Tingkat</button>
-            <button className="px-4 py-1.5 bg-[#6B5048] text-white rounded-md font-medium">Pelajaran</button>
-            <button className="px-4 py-1.5 bg-[#DC2626] text-white rounded-md font-medium">Ujian</button>
+        {/* HEADER TABLE */}
+        <div className="px-6 py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+
+          <div>
+            <h3 className="text-xl font-bold text-gray-800">
+              Daftar Mata Pelajaran
+            </h3>
+
+            <p className="text-sm text-gray-500 mt-1">
+              {hasil.length} data ditemukan
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+
+            {/* SEARCH */}
+            <input
+              type="text"
+              placeholder="Cari mapel..."
+              value={search}
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
+              className="w-[280px] max-w-full border border-gray-300 rounded-2xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#715445]/20"
+            />
+
+            {/* FILTER */}
+            <div className="flex gap-2">
+
+              {[
+                "semua",
+                "aktif",
+                "nonaktif",
+              ].map((x) => (
+                <button
+                  key={x}
+                  onClick={() =>
+                    setFilter(x)
+                  }
+                  className={`px-4 py-2 rounded-2xl text-sm font-semibold transition ${
+                    filter === x
+                      ? "bg-[#715445] text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {x}
+                </button>
+              ))}
+
+            </div>
+
           </div>
         </div>
 
+        {/* TABLE CONTENT */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-gray-200 bg-white">
-                <th className="py-4 px-6 text-sm font-semibold text-gray-800">Kelas</th>
-                <th className="py-4 px-6 text-sm font-semibold text-gray-800">Mapel</th>
-                <th className="py-4 px-6 text-sm font-semibold text-gray-800">Hari</th>
-                <th className="py-4 px-6 text-sm font-semibold text-gray-800">Jam</th>
-                <th className="py-4 px-6 text-sm font-semibold text-gray-800">Guru</th>
-                <th className="py-4 px-6 text-sm font-semibold text-gray-800">Tipe</th>
-                <th className="py-4 px-6 text-sm font-semibold text-gray-800">Aksi</th>
+
+          <table className="w-full text-sm">
+
+            <thead className="bg-[#F8F8F8] border-b border-gray-200 text-gray-500 uppercase text-[11px]">
+
+              <tr>
+                <th className="px-6 py-4 text-left">
+                  Kode
+                </th>
+
+                <th className="px-6 py-4 text-left">
+                  Nama Mata Pelajaran
+                </th>
+
+                <th className="px-6 py-4 text-center">
+                  Status
+                </th>
+
+                <th className="px-6 py-4 text-center">
+                  Aksi
+                </th>
               </tr>
+
             </thead>
-            <tbody className="divide-y divide-gray-100">
+
+            <tbody>
+
               {loading ? (
-                <tr><td colSpan="7" className="py-10 text-center text-gray-400">Memuat data...</td></tr>
-              ) : jadwalList.map((item, index) => (
-                <tr key={item.id ?? index} className="hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-6 text-sm font-medium text-gray-800">{item.kelas}</td>
-                  <td className="py-4 px-6 text-sm font-bold text-gray-800">{item.mapel}</td>
-                  <td className="py-4 px-6 text-sm font-bold text-gray-800">{item.hari}</td>
-                  <td className="py-4 px-6 text-sm font-bold text-gray-800">{item.rentangWaktu}</td>
-                  <td className="py-4 px-6 text-sm font-bold text-gray-800">{item.guru}</td>
-                  <td className="py-4 px-6">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-500 border border-green-200">
-                      {item.tipe ?? 'Pelajaran'}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 flex items-center gap-2">
-                    <button className="flex items-center gap-1 px-3 py-1.5 border border-blue-200 text-blue-500 bg-blue-50 hover:bg-blue-100 rounded-md text-xs font-medium transition-colors">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleNonaktifkan(item.id)}
-                      className="flex items-center gap-1 px-3 py-1.5 border border-red-200 text-red-500 bg-red-50 hover:bg-red-100 rounded-md text-xs font-medium transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
-                      Hapus
-                    </button>
+                <tr>
+                  <td
+                    colSpan="4"
+                    className="text-center py-10 text-gray-400"
+                  >
+                    Memuat data...
                   </td>
                 </tr>
-              ))}
-              {!loading && jadwalList.length === 0 && (
-                <tr><td colSpan="7" className="py-10 text-center text-gray-400">Belum ada data jadwal</td></tr>
+              ) : hasil.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="4"
+                    className="text-center py-10 text-gray-400"
+                  >
+                    Tidak ada data
+                  </td>
+                </tr>
+              ) : (
+                hasil.map((item, index) => (
+                  <tr
+                    key={item.id || index}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition"
+                  >
+
+                    <td className="px-6 py-4 font-semibold text-gray-700">
+                      {item.id}
+                    </td>
+
+                    <td className="px-6 py-4 font-medium text-gray-800">
+                      {item.nama}
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          item.status === "aktif"
+                            ? "bg-green-50 text-green-600"
+                            : "bg-red-50 text-red-500"
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+
+                    </td>
+
+                    <td className="px-6 py-4">
+
+                      <div className="flex justify-center gap-2 flex-wrap">
+
+                        <button
+                          onClick={() =>
+                            bukaEdit(item)
+                          }
+                          className="px-4 py-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold"
+                        >
+                          Edit
+                        </button>
+
+                        {item.status ===
+                        "aktif" ? (
+                          <button
+                            onClick={() =>
+                              ubahStatus(
+                                item.id,
+                                "nonaktif"
+                              )
+                            }
+                            className="px-4 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200 text-xs font-bold"
+                          >
+                            Nonaktifkan
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() =>
+                                ubahStatus(
+                                  item.id,
+                                  "aktif"
+                                )
+                              }
+                              className="px-4 py-2 rounded-xl bg-green-50 text-green-600 border border-green-200 text-xs font-bold"
+                            >
+                              Aktifkan
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                hapusMapel(
+                                  item.id
+                                )
+                              }
+                              className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold"
+                            >
+                              Hapus
+                            </button>
+                          </>
+                        )}
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+                ))
               )}
+
             </tbody>
+
           </table>
         </div>
       </div>
-    </div>
+
+    </section>
+
+    {/* MODAL EDIT tetap punya kamu */}
+
+      {/* MODAL EDIT */}
+      {showEdit && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-xl p-6">
+
+            <div className="flex items-center justify-between mb-5">
+
+              <h3 className="text-xl font-bold text-gray-800">
+                Edit Mata Pelajaran
+              </h3>
+
+              <button
+                onClick={() =>
+                  setShowEdit(
+                    false
+                  )
+                }
+                className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center"
+              >
+                <X size={18} />
+              </button>
+
+            </div>
+
+            <input
+              value={
+                editData.nama
+              }
+              onChange={(e) =>
+                setEditData({
+                  ...editData,
+                  nama:
+                    e.target
+                      .value,
+                })
+              }
+              className="w-full border border-gray-300 rounded-2xl px-4 py-3 mb-5 outline-none focus:ring-2 focus:ring-[#715445]/20"
+              placeholder="Nama mapel"
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+
+              <button
+                onClick={
+                  simpanEdit
+                }
+                disabled={
+                  editSaving
+                }
+                className="bg-[#715445] hover:bg-[#5E4236] text-white py-3 rounded-2xl font-semibold disabled:opacity-60"
+              >
+                {editSaving
+                  ? "Menyimpan..."
+                  : "Simpan"}
+              </button>
+
+              <button
+                onClick={() =>
+                  setShowEdit(
+                    false
+                  )
+                }
+                className="bg-gray-100 py-3 rounded-2xl font-semibold text-gray-700"
+              >
+                Batal
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+    </>
   );
 };
 
 export default AdminKelolaMapel;
+
+
+
