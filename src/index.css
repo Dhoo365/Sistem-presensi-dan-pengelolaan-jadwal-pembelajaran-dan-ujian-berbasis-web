@@ -31,21 +31,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* SCROLLBAR CUSTOM */
-::-webkit-scrollbar {
+.custom-scrollbar::-webkit-scrollbar {
   height: 8px;
+  width: 8px;
 }
 
-::-webkit-scrollbar-track {
-  background: #e5e5e5;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
   border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #9ca3af;
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
   border-radius: 10px;
+  cursor: grab;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  cursor: grabbing;
+  background: #888;
 }

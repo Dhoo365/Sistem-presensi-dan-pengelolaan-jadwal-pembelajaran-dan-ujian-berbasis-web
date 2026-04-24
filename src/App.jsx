@@ -17,7 +17,12 @@ import AdminKelolaKelas from "./pages/admin/AdminKelolaKelas";
 import AdminKelolaJadwal from "./pages/admin/AdminKelolaJadwal";
 import AdminKelolaAkun from "./pages/admin/AdminKelolaAkun";
 import AdminKelolaMapel from "./pages/admin/AdminKelolaMapel";
-
+import DashboardGuru from "./pages/guru/DashboardGuru"
+import LayoutGuru from "./layouts/LayoutGuru"
+import KelolaPresensi from "./pages/guru/KelolaPresensi"
+import RiwayatPresensi from "./pages/guru/RiwayatPresensi"
+import LihatJadwal from "./pages/guru/LihatJadwal"
+import LihatLaporan from "./pages/guru/LaporanGuru"
 /* ORTU */
 import LayoutOrtu from "./layouts/LayoutOrtu";
 import DashboardOrtu from "./pages/ortu/DashboardOrtu";
@@ -51,30 +56,6 @@ function App() {
         <Route path="akun" element={<AdminKelolaAkun />} />
         <Route path="mapel" element={<AdminKelolaMapel />} />
       </Route>
-
-      {/* ORTU */}
-      <Route
-        path="/ortu"
-        element={
-          <ProtectedRoute
-            allowedRoles={["ortu", "orangtua"]}
-          >
-            <LayoutOrtu />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<DashboardOrtu />} />
-        <Route
-          path="lihat-presensi"
-          element={<LihatPresensi />}
-        />
-        <Route
-          path="lihat-jadwal"
-          element={<JadwalOrtu />}
-        />
-      </Route>
-
-      {/* 404 */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
