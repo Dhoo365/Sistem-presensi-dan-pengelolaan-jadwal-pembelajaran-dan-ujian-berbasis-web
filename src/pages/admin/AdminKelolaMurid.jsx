@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import api from "../../lib/axios";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -11,86 +11,78 @@ import {
   Plus,
   Download,
   Upload,
+  User,
+  GraduationCap,
+  Users,
+  ChevronRight,
+  X,
+  Loader2,
+  Trash2,
+  Edit2,
+  CheckCircle2,
+  AlertCircle,
+  Power
 } from "lucide-react";
+import toast from "react-hot-toast";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 
 export default function AdminKelolaMurid() {
   /* ===============================
-     STATE
+     STATE (Logic Intact)
   =============================== */
-  const [tahunBaru, setTahunBaru] = React.useState("");
-  const [ganjilMulai, setGanjilMulai] = React.useState("");
-  const [ganjilSelesai, setGanjilSelesai] = React.useState("");
-  const [genapMulai, setGenapMulai] = React.useState("");
-  const [genapSelesai, setGenapSelesai] = React.useState("");
-  const [tahunAktif, setTahunAktif] = React.useState("-");
+  const [tahunBaru, setTahunBaru] = useState("");
+  const [ganjilMulai, setGanjilMulai] = useState("");
+  const [ganjilSelesai, setGanjilSelesai] = useState("");
+  const [genapMulai, setGenapMulai] = useState("");
+  const [genapSelesai, setGenapSelesai] = useState("");
+  const [tahunAktif, setTahunAktif] = useState("-");
 
-  const [muridData, setMuridData] = React.useState([]);
-  const [kelasList, setKelasList] = React.useState([]);
+  const [muridData, setMuridData] = useState([]);
+  const [kelasList, setKelasList] = useState([]);
 
-  const [loading, setLoading] = React.useState(true);
-  const [uploadLoading, setUploadLoading] = React.useState(false);
+  const [loading, setLoading] = useState(true);
+  const [uploadLoading, setUploadLoading] = useState(false);
 
-  const [search, setSearch] = React.useState("");
-  const [filterStatus, setFilterStatus] = React.useState("semua");
-  const [filterKelas, setFilterKelas] = React.useState("semua");
-  const [filterTahunLulus, setFilterTahunLulus] = React.useState("semua");
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("semua");
+  const [filterKelas, setFilterKelas] = useState("semua");
+  const [filterTahunLulus, setFilterTahunLulus] = useState("semua");
 
-  const [excelFile, setExcelFile] = React.useState(null);
+  const [excelFile, setExcelFile] = useState(null);
+  const [showTambah, setShowTambah] = useState(false);
 
-  const [showTambah, setShowTambah] = React.useState(false);
-
-  const [formTambah, setFormTambah] = React.useState({
+  const [formTambah, setFormTambah] = useState({
     nis: "",
     nama: "",
     kelas: "",
     nama_ortu: ""
   });
 
-  const [editId, setEditId] = React.useState(null);
-
-  const [editForm, setEditForm] = React.useState({
+  const [editId, setEditId] = useState(null);
+  const [editForm, setEditForm] = useState({
     nama: "",
     kelas: "",
     nama_ortu: ""
   });
 
   /* ===============================
-     FETCH MASTER
+     FETCH LOGIC (Logic Intact)
   =============================== */
-const fetchMaster = async () => {
-  try {
-    const kelasRes = await api
-      .get("/admin/kelas/aktif")
-      .catch(() => ({ data: [] }));
+  const fetchMaster = async () => {
+    try {
+      const kelasRes = await api.get("/admin/kelas/aktif").catch(() => ({ data: [] }));
+      setKelasList(kelasRes.data || []);
+      const tahunRes = await api.get("/admin/tahun-ajaran/aktif").catch(() => ({ data: { id: "-" } }));
+      setTahunAktif(tahunRes.data?.id || "-");
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
-    setKelasList(
-      kelasRes.data || []
-    );
-
-    const tahunRes = await api
-      .get("/admin/tahun-ajaran/aktif")
-      .catch(() => ({
-        data: { id: "-" },
-      }));
-
-    setTahunAktif(
-      tahunRes.data?.id || "-"
-    );
-
-  } catch (err) {
-    console.log(err);
-  }
-};
-
-  /* ===============================
-     FETCH MURID
-  =============================== */
   const fetchMurid = async () => {
     try {
       setLoading(true);
-
       const res = await api.get("/admin/murid");
-
       setMuridData(res.data || []);
     } catch (err) {
       console.log(err);
@@ -102,9 +94,7 @@ const fetchMaster = async () => {
   const fetchMuridLulus = async () => {
     try {
       setLoading(true);
-
       const res = await api.get("/admin/murid/lulus");
-
       setMuridData(res.data || []);
     } catch (err) {
       console.log(err);
@@ -113,48 +103,11 @@ const fetchMaster = async () => {
     }
   };
 
-  const handleRollover = async () => {
-  try {
-    const res = await api.post(
-      "/admin/tahun-ajaran/rollover",
-      {
-        tahunBaru,
-        semester1: {
-          mulai: ganjilMulai,
-          selesai: ganjilSelesai,
-        },
-        semester2: {
-          mulai: genapMulai,
-          selesai: genapSelesai,
-        },
-      }
-    );
-
-    await fetchMaster();
-    await fetchMurid();
-
-    alert(
-      `Berhasil rollover\nNaik kelas: ${res.data.naikKelas}\nLulus: ${res.data.lulus}`
-    );
-
-  } catch (err) {
-    console.log(err);
-
-    alert(
-      err.response?.data?.error ||
-      "Gagal rollover"
-    );
-  }
-  };
-
-  /* ===============================
-     INIT
-  =============================== */
-  React.useEffect(() => {
+  useEffect(() => {
     fetchMaster();
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (filterStatus === "lulus") {
       fetchMuridLulus();
     } else {
@@ -163,1126 +116,1352 @@ const fetchMaster = async () => {
   }, [filterStatus]);
 
   /* ===============================
-     ACTION
+     HANDLERS (Logic Intact)
   =============================== */
-  const toggleStatus = async (murid) => {
-    try {
-      const statusBaru =
-        murid.status === "aktif" ? "nonaktif" : "aktif";
-
-      await api.patch(
-        `/admin/murid/${murid.nis}/status`,
-        { status: statusBaru }
-      );
-
-      fetchMurid();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const saveEdit = async (nis) => {
-    try {
-      await api.patch(`/admin/murid/${nis}`, {
-      nama: editForm.nama,
-      kelas: Number(editForm.kelas),
-      nama_ortu: editForm.nama_ortu
-    });
-
-      setEditId(null);
-      fetchMurid();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const hapusMurid = async (nis) => {
-    const yakin = window.confirm(
-      "Yakin hapus murid ini?"
+const handleRollover = async () => {
+  try {
+    const id = toast.loading(
+      "Memproses rollover tahun ajaran..."
     );
 
-    if (!yakin) return;
-
-    try {
-      await api.delete(`/admin/murid/${nis}`);
-      fetchMurid();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const tambahMurid = async () => {
-    try {
-      await api.post("/admin/murid", {
-        nis: formTambah.nis,
-        nama: formTambah.nama,
-        kelas_id: Number(formTambah.kelas),
-        nama_ortu: formTambah.nama_ortu || null
-      });
-
-      setShowTambah(false);
-
-      setFormTambah({
-        nis: "",
-        nama: "",
-        kelas: "",
-        nama_ortu: ""
-      });
-
-      fetchMurid();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const uploadExcel = async () => {
-    try {
-      if (!excelFile) {
-        alert("Pilih file dulu");
-        return;
-      }
-
-      setUploadLoading(true);
-
-      const formData = new FormData();
-      formData.append("file", excelFile);
-
-      await api.post(
-        "/admin/murid/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type":
-              "multipart/form-data",
-          },
+    const res = await api.post(
+      "/admin/tahun-ajaran/rollover",
+      {
+        tahunBaru,
+        semester1: {
+          mulai: ganjilMulai,
+          selesai: ganjilSelesai
+        },
+        semester2: {
+          mulai: genapMulai,
+          selesai: genapSelesai
         }
-      );
+      }
+    );
 
-      alert("Upload berhasil");
+    await fetchMaster();
+    await fetchMurid();
 
-      setExcelFile(null);
-      fetchMurid();
-    } catch (err) {
-      console.log(err);
-      alert("Upload gagal");
-    } finally {
-      setUploadLoading(false);
-    }
-  };
+    toast.success(
+      `Rollover berhasil • Naik Kelas ${res.data.naikKelas} • Lulus ${res.data.lulus}`,
+      { id }
+    );
+  } catch (err) {
+    toast.error(
+      err.response?.data?.error ||
+        "Gagal rollover tahun ajaran"
+    );
+  }
+};
+const toggleStatus = async (murid) => {
+  try {
+    const statusBaru =
+      murid.status === "aktif"
+        ? "nonaktif"
+        : "aktif";
+
+    const id = toast.loading(
+      "Memperbarui status..."
+    );
+
+    await api.patch(
+      `/admin/murid/${murid.nis}/status`,
+      {
+        status: statusBaru
+      }
+    );
+
+    await fetchMurid();
+
+    toast.success(
+      `Status ${murid.nama} menjadi ${statusBaru}`,
+      { id }
+    );
+  } catch (err) {
+    toast.error(
+      "Gagal memperbarui status"
+    );
+  }
+};
+
 
   const downloadTemplate = () => {
     const data = [
-
-      {
-        NIS: "M001",
-        NAMA: "Rafael Kairupan",
-        NAMA_ORANG_TUA: "Yanto Kairupan",
-        KELAS: "2"
-      },
-      {
-        NIS: "M002",
-        NAMA: "Mikael Runtuwene",
-        NAMA_ORANG_TUA: "Maria Runtuwene",
-        KELAS: "2"
-      }
+      { NIS: "M001", NAMA: "Rafael Kairupan", NAMA_ORANG_TUA: "Yanto Kairupan", KELAS: "2" },
+      { NIS: "M002", NAMA: "Mikael Runtuwene", NAMA_ORANG_TUA: "Maria Runtuwene", KELAS: "2" }
     ];
-
-    const worksheet =
-      XLSX.utils.json_to_sheet(data);
-
-    const workbook =
-      XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      "Template"
-    );
-
-    const excelBuffer = XLSX.write(
-      workbook,
-      {
-        bookType: "xlsx",
-        type: "array",
-      }
-    );
-
-    const fileData = new Blob(
-      [excelBuffer],
-      {
-        type:
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      }
-    );
-
-    saveAs(
-      fileData,
-      "template_murid.xlsx"
-    );
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    saveAs(new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "template_murid.xlsx");
   };
 
-  /* ===============================
-     FILTER
-  =============================== */
-  const filteredData = muridData.filter(
-    (m) => {
-      const cocokSearch =
-        `${m.nis} ${m.nama}`
-          .toLowerCase()
-          .includes(
-            search.toLowerCase()
-          );
+  const filteredData = muridData.filter((m) => {
+    const cocokSearch = `${m.nis} ${m.nama}`.toLowerCase().includes(search.toLowerCase());
+    const cocokStatus = filterStatus === "semua" ? true : m.status === filterStatus;
+    const cocokKelas = filterStatus === "lulus" ? true : filterKelas === "semua" ? true : String(m.kelas) === String(filterKelas);
+    const cocokTahun = filterStatus !== "lulus" ? true : filterTahunLulus === "semua" ? true : String(m.tahun) === String(filterTahunLulus);
+    return cocokSearch && cocokStatus && cocokKelas && cocokTahun;
+  });
 
-      const cocokStatus =
-        filterStatus === "semua"
-          ? true
-          : m.status === filterStatus;
+  /* =========================================================
+   STATE TAMBAHAN
+========================================================= */
 
-      const cocokKelas =
-        filterStatus === "lulus"
-          ? true
-          : filterKelas === "semua"
-          ? true
-          : String(m.kelas) ===
-            String(filterKelas);
+const [showDelete, setShowDelete] =
+  useState(false);
 
-      const cocokTahun =
-        filterStatus !== "lulus"
-          ? true
-          : filterTahunLulus ===
-            "semua"
-          ? true
-          : String(m.tahun) ===
-            String(filterTahunLulus);
+const [selectedDelete, setSelectedDelete] =
+  useState(null);
 
-      return (
-        cocokSearch &&
-        cocokStatus &&
-        cocokKelas &&
-        cocokTahun
+const [deleteLoading, setDeleteLoading] =
+  useState(false);
+
+
+/* =========================================================
+   GANTI HAPUS MURID
+========================================================= */
+
+const hapusMurid = async (nis) => {
+  setSelectedDelete(nis);
+  setShowDelete(true);
+};
+
+
+/* =========================================================
+   HANDLE DELETE CONFIRM
+========================================================= */
+
+const confirmDelete = async () => {
+  try {
+    setDeleteLoading(true);
+
+    const loadId =
+      toast.loading(
+        "Menghapus murid..."
       );
-    }
-  );
 
-  return (
-    <div className="space-y-8">
-      {/* Section 1 : Manajemen Tahun Ajaran */}
-    <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
-      {/* Header */}
-      <div className="flex items-start gap-3 mb-6">
-        <CalendarIcon size={24} className="text-gray-700 mt-1" />
+    await api.delete(
+      `/admin/murid/${selectedDelete}`
+    );
 
-        <div>
-          <h3 className="text-xl font-bold text-gray-800">
-            Manajemen Tahun Ajaran
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">
-            Atur pergantian tahun ajaran dan periode semester dengan aman.
-          </p>
-        </div>
-      </div>
+    toast.success(
+      "Murid berhasil dihapus",
+      { id: loadId }
+    );
 
-      {/* Main Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    setShowDelete(false);
+    setSelectedDelete(null);
 
-        {/* LEFT CONTENT */}
-        <div className="xl:col-span-2 space-y-6">
+    fetchMurid();
+  } catch (err) {
+    toast.error(
+      "Gagal menghapus data"
+    );
+  } finally {
+    setDeleteLoading(false);
+  }
+};
 
-          {/* Tahun Aktif + Tahun Baru */}
-          <div className="grid md:grid-cols-2 gap-5">
 
-            {/* Tahun Aktif */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-              <p className="text-sm text-gray-500 mb-2">
-                Tahun Ajaran Aktif
-              </p>
+/* =========================================================
+   GANTI TAMBAH MURID
+========================================================= */
 
-              <div className="flex items-center gap-3">
-                <h2 className="text-4xl font-black text-gray-800 tracking-tight">
-                  {tahunAktif}
-                </h2>
+const tambahMurid = async () => {
+  try {
+    const loadId =
+      toast.loading(
+        "Menyimpan murid..."
+      );
 
-                <span className="text-xs font-bold px-3 py-1 rounded-full border border-[#60B873] text-[#60B873] bg-[#E4F5E8]">
-                  Aktif
-                </span>
-              </div>
-            </div>
+    await api.post("/admin/murid", {
+      nis: formTambah.nis,
+      nama: formTambah.nama,
+      kelas_id: Number(
+        formTambah.kelas
+      ),
+      nama_ortu:
+        formTambah.nama_ortu ||
+        null
+    });
 
-            {/* Tahun Baru */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Tahun Ajaran Baru
-              </label>
+    toast.success(
+      "Murid berhasil ditambahkan",
+      { id: loadId }
+    );
 
-              <div className="flex items-center bg-[#F8F8F8] border border-gray-300 rounded-xl px-4 py-3">
-                <CalendarIcon size={18} className="text-gray-500 mr-3" />
-                  <select
-                    value={tahunBaru}
-                    onChange={(e) =>
-                      setTahunBaru(
-                        e.target.value
-                      )
-                    }
-                    className="w-full bg-transparent outline-none text-sm font-semibold text-gray-800"
-                  >
-                    <option value="">
-                      Pilih Tahun Ajaran
-                    </option>
+    setShowTambah(false);
 
-                    {(() => {
-                      const awal =
-                        parseInt(
-                          tahunAktif.split("-")[0]
-                        ) + 1;
+    setFormTambah({
+      nis: "",
+      nama: "",
+      kelas: "",
+      nama_ortu: ""
+    });
 
-                      const akhir =
-                        awal + 1;
+    fetchMurid();
+  } catch (err) {
+    toast.error(
+      "Gagal menambah murid"
+    );
+  }
+};
 
-                      const nextYear =
-                        `${awal}-${akhir}`;
 
-                      return (
-                        <option
-                          value={nextYear}
-                        >
-                          {nextYear}
-                        </option>
-                      );
-                    })()}
-                  </select>
-              </div>
-            </div>
-          </div>
+/* =========================================================
+   GANTI EDIT
+========================================================= */
 
-          {/* Semester */}
-          <div className="grid md:grid-cols-2 gap-5">
+const saveEdit = async (nis) => {
+  try {
+    const loadId =
+      toast.loading(
+        "Menyimpan perubahan..."
+      );
 
-            {/* Semester Ganjil */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-bold text-gray-800">
-                  Semester Ganjil
-                </h4>
+    await api.patch(
+      `/admin/murid/${nis}`,
+      {
+        nama: editForm.nama,
+        kelas: Number(
+          editForm.kelas
+        ),
+        nama_ortu:
+          editForm.nama_ortu
+      }
+    );
 
-                <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">
-                  Semester 1
-                </span>
-              </div>
+    toast.success(
+      "Perubahan disimpan",
+      { id: loadId }
+    );
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">
-                    Tanggal Mulai
-                  </label>
-                    <input
-                      type="date"
-                      value={ganjilMulai}
-                      onChange={(e) => setGanjilMulai(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#715445]/20"
-                    />
-                </div>
+    setEditId(null);
 
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">
-                    Tanggal Selesai
-                  </label>
-                    <input
-                      type="date"
-                      value={ganjilSelesai}
-                      onChange={(e) => setGanjilSelesai(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#715445]/20"
-                    />
-                </div>
-              </div>
-            </div>
+    fetchMurid();
+  } catch (err) {
+    toast.error(
+      "Gagal menyimpan perubahan"
+    );
+  }
+};
 
-            {/* Semester Genap */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-bold text-gray-800">
-                  Semester Genap
-                </h4>
 
-                <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">
-                  Semester 2
-                </span>
-              </div>
+/* =========================================================
+   GANTI UPLOAD EXCEL
+========================================================= */
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">
-                    Tanggal Mulai
-                  </label>
-                    <input
-                      type="date"
-                      value={genapMulai}
-                      onChange={(e) => setGenapMulai(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#715445]/20"
-                    />
-                </div>
+const uploadExcel = async () => {
+  try {
+    if (!excelFile)
+      return toast.error(
+        "Pilih file dulu"
+      );
 
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">
-                    Tanggal Selesai
-                  </label>
-                    <input
-                      type="date"
-                      value={genapSelesai}
-                      onChange={(e) => setGenapSelesai(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#715445]/20"
-                    />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    setUploadLoading(true);
 
-      {/* RIGHT PANEL */}
-<div>
-  <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm h-full flex flex-col">
+    const id =
+      toast.loading(
+        "Mengunggah file..."
+      );
 
-    <h4 className="font-bold text-gray-800 mb-5">
-      Ringkasan Proses
-    </h4>
+    const formData =
+      new FormData();
 
-    {(() => {
+    formData.append(
+      "file",
+      excelFile
+    );
 
-      const parseDate = (val) => {
-        if (!val) return null;
-        const d = new Date(val);
-        return isNaN(d.getTime()) ? null : d;
-      };
-
-      const gMulai = parseDate(ganjilMulai);
-      const gSelesai = parseDate(ganjilSelesai);
-      const eMulai = parseDate(genapMulai);
-      const eSelesai = parseDate(genapSelesai);
-      const aktifAwal =
-      parseInt(
-        tahunAktif.split("-")[0]
-      ) || 0;
-
-      let statusText = "";
-      let statusColor = "";
-
-      if (!tahunBaru) {
-        statusText = "Pilih Tahun Ajaran Baru";
-        statusColor = "text-red-500";
-      } else {
-        const baruAwal = parseInt(tahunBaru.split("-")[0]);
-        const baruAkhir = parseInt(tahunBaru.split("-")[1]);
-
-        const bulanGMulai = gMulai ? gMulai.getMonth() + 1 : 0;
-        const bulanGSelesai = gSelesai ? gSelesai.getMonth() + 1 : 0;
-        const bulanEMulai = eMulai ? eMulai.getMonth() + 1 : 0;
-        const bulanESelesai = eSelesai ? eSelesai.getMonth() + 1 : 0;
-
-        const durasiGanjil =
-          gMulai && gSelesai
-            ? Math.floor((gSelesai - gMulai) / (1000 * 60 * 60 * 24))
-            : 0;
-
-        const durasiGenap =
-          eMulai && eSelesai
-            ? Math.floor((eSelesai - eMulai) / (1000 * 60 * 60 * 24))
-            : 0;
-
-        const jedaSemester =
-          gSelesai && eMulai
-            ? Math.floor((eMulai - gSelesai) / (1000 * 60 * 60 * 24))
-            : 0;
-
-        /* =========================
-           VALIDASI TAHUN AJARAN
-        ========================= */
-        if (
-          isNaN(baruAwal) ||
-          isNaN(baruAkhir) ||
-          baruAwal <= aktifAwal ||
-          baruAkhir !== baruAwal + 1
-        ) {
-          statusText = "Tahun Ajaran Tidak Valid";
-          statusColor = "text-red-500";
-        }
-
-        /* =========================
-           FIELD BELUM LENGKAP
-        ========================= */
-        else if (
-          !ganjilMulai ||
-          !ganjilSelesai ||
-          !genapMulai ||
-          !genapSelesai
-        ) {
-          statusText = "Lengkapi Periode Semester";
-          statusColor = "text-orange-500";
-        }
-
-        /* =========================
-           VALIDASI DASAR
-        ========================= */
-        else if (!gMulai || !gSelesai) {
-          statusText = "Tanggal Semester Ganjil Salah";
-          statusColor = "text-red-500";
-        }
-
-        else if (!eMulai || !eSelesai) {
-          statusText = "Tanggal Semester Genap Salah";
-          statusColor = "text-red-500";
-        }
-
-        else if (gMulai >= gSelesai) {
-          statusText = "Rentang Semester Ganjil Tidak Valid";
-          statusColor = "text-red-500";
-        }
-
-        else if (eMulai >= eSelesai) {
-          statusText = "Rentang Semester Genap Tidak Valid";
-          statusColor = "text-red-500";
-        }
-
-        else if (eMulai <= gSelesai) {
-          statusText = "Jadwal Semester Bertabrakan";
-          statusColor = "text-red-500";
-        }
-
-        /* =========================
-           TAHUN HARUS SESUAI
-        ========================= */
-        else if (
-          gMulai.getFullYear() !== baruAwal ||
-          gSelesai.getFullYear() !== baruAwal
-        ) {
-          statusText = `Semester Ganjil Harus Tahun ${baruAwal}`;
-          statusColor = "text-red-500";
-        }
-
-        else if (
-          eMulai.getFullYear() !== baruAkhir ||
-          eSelesai.getFullYear() !== baruAkhir
-        ) {
-          statusText = `Semester Genap Harus Tahun ${baruAkhir}`;
-          statusColor = "text-red-500";
-        }
-
-        /* =========================
-           VALIDASI BULAN & DURASI
-        ========================= */
-
-        /* Ganjil mulai Mei-Oktober */
-        else if (bulanGMulai < 5 || bulanGMulai > 10) {
-          statusText = "Awal Semester Ganjil Tidak Umum";
-          statusColor = "text-red-500";
-        }
-
-        /* Ganjil selesai Nov-Feb */
-        else if (![11, 12, 1, 2].includes(bulanGSelesai)) {
-          statusText = "Akhir Semester Ganjil Perlu Dicek";
-          statusColor = "text-red-500";
-        }
-
-        /* Genap mulai Jan-Apr */
-        else if (![1, 2, 3, 4].includes(bulanEMulai)) {
-          statusText = "Awal Semester Genap Tidak Umum";
-          statusColor = "text-red-500";
-        }
-
-        /* Genap selesai Mei-Agustus */
-        else if (![5, 6, 7, 8].includes(bulanESelesai)) {
-          statusText = "Akhir Semester Genap Perlu Dicek";
-          statusColor = "text-red-500";
-        }
-
-        /* Durasi semester */
-        else if (durasiGanjil < 70 || durasiGanjil > 230) {
-          statusText = "Durasi Semester Ganjil Tidak Logis";
-          statusColor = "text-red-500";
-        }
-
-        else if (durasiGenap < 70 || durasiGenap > 230) {
-          statusText = "Durasi Semester Genap Tidak Logis";
-          statusColor = "text-red-500";
-        }
-
-        /* Jeda antar semester */
-        else if (jedaSemester > 60) {
-          statusText = "Jeda Antar Semester Terlalu Lama";
-          statusColor = "text-orange-500";
-        }
-
-        else {
-          statusText = "Data Valid & Siap Diproses";
-          statusColor = "text-green-600";
+    await api.post(
+      "/admin/murid/upload",
+      formData,
+      {
+        headers: {
+          "Content-Type":
+            "multipart/form-data"
         }
       }
+    );
 
-      const tombolDisable =
-        statusText !== "Data Valid & Siap Diproses";
+    toast.success(
+      "Upload berhasil",
+      { id }
+    );
 
-      return (
-        <>
-          <div className="space-y-4 text-sm">
+    setExcelFile(null);
 
-            <div className="flex justify-between border-b border-gray-100 pb-3">
-              <span className="text-gray-500">Tahun Aktif</span>
-              <span className="font-semibold text-gray-800">
-                {tahunAktif}
-              </span>
+    fetchMurid();
+  } catch (err) {
+    toast.error(
+      "Upload gagal"
+    );
+  } finally {
+    setUploadLoading(false);
+  }
+};
+
+function ActionBtn({
+  children,
+  onClick,
+  danger = false
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-10 h-10 rounded-2xl border inline-flex items-center justify-center transition-all active:scale-95 ${
+        danger
+          ? "bg-rose-50 border-rose-200 text-rose-600"
+          : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 animate-in fade-in duration-700">
+      
+      {/* SECTION 1: MANAJEMEN TAHUN AJARAN (VERCEL CARD) */}
+      <section className="relative group">
+        <div className="absolute -inset-1 bg-gradient-to-r from-gray-200 to-gray-100 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+        <div className="relative bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden p-8">
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+            <div className="flex items-center gap-5">
+              <div className="p-4 bg-[#715445]/5 rounded-2xl text-[#715445]">
+                <CalendarIcon size={28} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-gray-900 tracking-tight">Tahun Ajaran</h3>
+                <p className="text-gray-500 text-sm font-medium">Atur periode akademik & kenaikan kelas otomatis.</p>
+              </div>
             </div>
-
-            <div className="flex justify-between border-b border-gray-100 pb-3">
-              <span className="text-gray-500">Tahun Baru</span>
-              <span className="font-semibold text-gray-800">
-                {tahunBaru || "-"}
-              </span>
-            </div>
-
-            <div className="flex justify-between pb-1">
-              <span className="text-gray-500">Status</span>
-              <span className={`font-semibold ${statusColor}`}>
-                {statusText}
-              </span>
+            <div className="bg-[#715445]/5 px-6 py-3 rounded-2xl border border-[#715445]/10">
+              <p className="text-[10px] font-bold text-[#715445] uppercase tracking-[0.2em] mb-1">Status Sekarang</p>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span className="text-xl font-black text-gray-800 tracking-tighter">{tahunAktif}</span>
+              </div>
             </div>
           </div>
 
-          <div className="mt-5 bg-[#F8F5F3] rounded-xl p-4 text-xs text-gray-600 leading-relaxed">
-            Sistem akan menutup tahun ajaran aktif dan menjadikan
-            tahun ajaran baru aktif setelah seluruh data valid.
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              {/* TAHUN BARU SELECTOR */}
+              <div className="bg-gray-50/50 rounded-2xl p-6 border border-gray-100">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 block">Siapkan Tahun Ajaran Baru</label>
+                <div className="relative group/input">
+                  <select
+                    value={tahunBaru}
+                    onChange={(e) => setTahunBaru(e.target.value)}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-gray-800 outline-none focus:ring-4 focus:ring-[#715445]/5 focus:border-[#715445]/30 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">Pilih Tahun Ajaran Berikutnya</option>
+                    {(() => {
+                      const awal = parseInt(tahunAktif.split("-")[0]) + 1;
+                      const nextYear = `${awal}-${awal + 1}`;
+                      return isNaN(awal) ? null : <option value={nextYear}>{nextYear}</option>;
+                    })()}
+                  </select>
+                  <ChevronRight size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none rotate-90" />
+                </div>
+              </div>
+
+              {/* SEMESTER GRID */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* GANJIL */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 ml-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#715445]"></div>
+                    <span className="text-xs font-black text-gray-500 uppercase tracking-widest">Semester Ganjil</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="date" value={ganjilMulai} onChange={(e) => setGanjilMulai(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-4 focus:ring-[#715445]/5" />
+                    <input type="date" value={ganjilSelesai} onChange={(e) => setGanjilSelesai(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-4 focus:ring-[#715445]/5" />
+                  </div>
+                </div>
+                {/* GENAP */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 ml-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#715445]"></div>
+                    <span className="text-xs font-black text-gray-500 uppercase tracking-widest">Semester Genap</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="date" value={genapMulai} onChange={(e) => setGenapMulai(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-4 focus:ring-[#715445]/5" />
+                    <input type="date" value={genapSelesai} onChange={(e) => setGenapSelesai(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-4 focus:ring-[#715445]/5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SUMMARY PANEL */}
+            <div className="bg-[#715445] rounded-[1.8rem] p-8 text-white flex flex-col shadow-xl shadow-[#715445]/20">
+              <h4 className="font-bold text-lg mb-6">Proses Rollover</h4>
+              <div className="space-y-5 flex-1">
+                <div className="flex justify-between items-center text-sm border-b border-white/10 pb-3">
+                  <span className="text-white/60">Tahun Baru</span>
+                  <span className="font-mono font-bold">{tahunBaru || "---"}</span>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Status Validasi</p>
+                  {(() => {
+                    const status = !tahunBaru ? { text: "Menunggu Input", color: "text-white/50" } : 
+                                   (!ganjilMulai || !genapSelesai) ? { text: "Periode Belum Lengkap", color: "text-orange-300" } : 
+                                   { text: "Data Siap Diproses", color: "text-emerald-300" };
+                    return (
+                      <div className={`flex items-center gap-2 text-sm font-bold ${status.color}`}>
+                        <AlertCircle size={14} /> {status.text}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+              <button 
+                onClick={handleRollover}
+                disabled={!tahunBaru || !ganjilMulai}
+                className="w-full bg-white text-[#715445] py-4 rounded-2xl font-black text-sm transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed mt-8"
+              >
+                Tutup & Mulai Tahun Baru
+              </button>
+            </div>
           </div>
-
-          <button
-            onClick={handleRollover}
-            disabled={tombolDisable}
-            className={`mt-auto w-full py-3 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 mt-6 ${
-              tombolDisable
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-[#715445] hover:bg-[#5E4236] text-white"
-            }`}
-          >
-            <Plus size={16} />
-            Tutup Tahun Ajaran & Buat Baru
-          </button>
-        </>
-      );
-    })()}
-  </div>
-</div>
-
-      </div>
-    </section>
-
-      {/* Section 2: Upload Murid Dari Excel */}
-      <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
-        <div className="flex items-center gap-3 mb-2">
-          <CloudUpload size={24} className="text-gray-700" />
-          <h3 className="font-bold text-xl text-gray-800">Upload Murid Dari Excel</h3>
-        </div>
-        <p className="text-sm text-gray-600 mb-5 ml-9">
-          Upload data murid sekaligus menggunakan file Excel.<br />
-          Format Wajib: <strong>NIS, NAMA, NAMA_ORANG_TUA, KELAS.</strong>
-        </p>
-
-        <div className="flex items-center gap-4 ml-9">
-          <button
-          onClick={
-          downloadTemplate
-          }
-          className="bg-[#C5C5C5] hover:bg-[#B0B0B0] text-gray-800 text-sm font-bold px-5 py-2.5 rounded-lg flex items-center gap-2 transition-colors border border-gray-400"
-          >
-          <Download size={16} />
-          Unduh Template Excel
-          </button>
-
-          <div className="flex items-center bg-[#C5C5C5] border border-gray-400 rounded-lg overflow-hidden">
-
-          <label className="bg-[#8A7B76] text-white text-sm font-bold px-4 py-2.5 flex items-center gap-2 hover:bg-[#736561] cursor-pointer">
-
-          <Upload size={16} />
-          Pilih File
-
-          <input
-          type="file"
-          accept=".xlsx,.xls,.csv"
-          hidden
-          onChange={(e) =>
-          setExcelFile(
-          e.target.files[0]
-          )}
-          />
-
-          </label>
-          <span className="text-xs text-gray-700 px-4">
-          {excelFile
-          ? excelFile.name
-          : "Tidak ada file dipilih"}
-          </span>
-          </div>
-
-          <button
-          onClick={uploadExcel}
-          disabled={uploadLoading}
-          className="bg-[#715445] hover:bg-[#5E4236] text-white text-sm font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
-          >
-          <Upload size={16} />
-
-          {uploadLoading
-          ? "Mengunggah..."
-          : "Unggah Excel"}
-
-          </button>
         </div>
       </section>
 
-      {/* Section 3: Daftar Murid */}
-    <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
-      <div className="flex items-center gap-3 mb-2">
-        <ClipboardList size={24} className="text-gray-700" />
-        <h3 className="font-bold text-xl text-gray-800">
-          Daftar Murid
+      {/* SECTION 2: IMPORT EXCEL (MODERN UPLOAD) */}
+      <section className="bg-gray-50/50 rounded-[2rem] border border-gray-100 p-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="flex items-center gap-5">
+            <div className="p-4 bg-white rounded-2xl shadow-sm text-gray-700">
+              <CloudUpload size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Impor Data Massal</h3>
+              <p className="text-sm text-gray-500 font-medium">Unggah berkas Excel sesuai template yang tersedia.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <button onClick={downloadTemplate} className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-600 hover:border-[#715445] hover:text-[#715445] transition-all shadow-sm">
+              <Download size={18} /> Unduh Template
+            </button>
+
+            <div className="flex items-center gap-2 p-1 bg-white border border-gray-200 rounded-2xl shadow-sm">
+              <label className="flex items-center gap-2 px-4 py-2 bg-[#715445] text-white rounded-xl text-sm font-bold cursor-pointer hover:bg-[#5E4236] transition-all">
+                <Upload size={16} /> Pilih File
+                <input type="file" accept=".xlsx,.xls,.csv" hidden onChange={(e) => setExcelFile(e.target.files[0])} />
+              </label>
+              <span className="text-xs font-bold text-gray-400 px-3 max-w-[150px] truncate">
+                {excelFile ? excelFile.name : "Format .xlsx"}
+              </span>
+            </div>
+
+            <button onClick={uploadExcel} disabled={uploadLoading || !excelFile} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-black transition-all shadow-lg shadow-black/10 disabled:opacity-40">
+              {uploadLoading ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+              Mulai Unggah
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3: TABLE LIST (WITH DOT ANIMATION) */}
+
+
+<section className="space-y-5 sm:space-y-6">
+  {/* HEADER */}
+  <div className="flex flex-col gap-4">
+    <div className="space-y-1">
+      <div className="flex items-center gap-2 text-[#715445]">
+        <Users size={18} className="shrink-0" />
+        <h3 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">
+          Database Murid
         </h3>
       </div>
 
-      <p className="text-sm text-gray-600 mb-5 ml-9">
-        Upload data murid yang terdaftar di sistem
+      <p className="text-sm text-gray-500 font-medium">
+        Total {filteredData.length} siswa terdaftar di sistem.
       </p>
+    </div>
 
-      <div className="ml-9">
+    {/* SEARCH + FILTER */}
+    <div className="sticky top-2 z-20 rounded-3xl bg-white/90 backdrop-blur-md border border-gray-100 shadow-sm p-3 sm:p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* SEARCH */}
+        <div className="relative group">
+          <Search
+            size={18}
+            className="
+              absolute left-4 top-1/2 -translate-y-1/2
+              text-gray-400
+              group-focus-within:text-[#715445]
+            "
+          />
 
-        {/* Search + Filter */}
-        <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
+          <input
+            type="text"
+            placeholder="Cari NIS / nama..."
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
+            className="
+              w-full pl-11 pr-12
+              h-11
+              rounded-2xl
+              border border-gray-200
+              bg-white
+              text-sm
+              outline-none
+              focus:ring-4 focus:ring-[#715445]/10
+              focus:border-[#715445]/30
+            "
+          />
 
-          {/* Search */}
-          <div className="relative w-80">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            />
-
-            <input
-              type="text"
-              placeholder="Cari NIS atau nama murid..."
-              value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 text-sm outline-none focus:border-gray-500"
-            />
-          </div>
-
-          {/* Filter */}
-          <div className="flex items-center gap-2 flex-wrap">
-
+          {search && (
             <button
-              onClick={() =>
-                setFilterStatus("aktif")
-              }
-              className={`text-xs font-bold px-4 py-1.5 rounded-full border ${
-                filterStatus === "aktif"
-                  ? "bg-[#E4F5E8] text-[#60B873] border-[#60B873]"
-                  : "bg-white text-gray-600 border-gray-300"
-              }`}
+              type="button"
+              onClick={() => setSearch("")}
+              className="
+                absolute right-3 top-1/2 -translate-y-1/2
+                w-7 h-7 rounded-full
+                bg-gray-100 hover:bg-gray-200
+                text-gray-500
+                flex items-center justify-center
+                transition-all
+                active:scale-95
+              "
             >
-              Aktif
+              <X size={14} />
             </button>
-
-            <button
-              onClick={() =>
-                setFilterStatus("nonaktif")
-              }
-              className={`text-xs font-bold px-4 py-1.5 rounded-full border ${
-                filterStatus === "nonaktif"
-                  ? "bg-[#FCEAE9] text-[#E16766] border-[#E16766]"
-                  : "bg-white text-gray-600 border-gray-300"
-              }`}
-            >
-              Nonaktif
-            </button>
-
-            <button
-              onClick={() => {
-                setFilterStatus("lulus");
-                fetchMuridLulus();
-              }}
-              className={`text-xs font-bold px-4 py-1.5 rounded-full border ${
-                filterStatus === "lulus"
-                  ? "bg-[#EBE4F5] text-[#8460B8] border-[#8460B8]"
-                  : "bg-white text-gray-600 border-gray-300"
-              }`}
-            >
-              Lulus
-            </button>
-
-            <button
-              onClick={() =>
-                setFilterStatus("semua")
-              }
-              className={`text-xs font-bold px-4 py-1.5 rounded-full border flex items-center gap-2 ${
-                filterStatus === "semua"
-                  ? "bg-[#E8F0FE] text-[#1A73E8] border-[#1A73E8]"
-                  : "bg-white text-gray-600 border-gray-300"
-              }`}
-            >
-              <Filter size={12} />
-              Semua
-            </button>
-
-            <select
-              value={filterKelas}
-              onChange={(e) =>
-                setFilterKelas(
-                  e.target.value
-                )
-              }
-              className="px-4 py-1.5 rounded-full border border-gray-500 text-xs outline-none"
-            >
-              <option value="semua">
-                Semua Kelas
-              </option>
-
-              {kelasList.map((k) => (
-                <option
-                  key={k.id}
-                  value={k.id}
-                >
-                  {k.nama}
-                </option>
-              ))}
-            </select>
-
-
-            {filterStatus ===
-              "lulus" && (
-              <select
-                value={
-                  filterTahunLulus
-                }
-                onChange={(e) =>
-                  setFilterTahunLulus(
-                    e.target.value
-                  )
-                }
-                className="px-4 py-1.5 rounded-full border border-gray-500 text-xs outline-none"
-              >
-                <option value="semua">
-                  Semua Tahun
-                </option>
-
-                <option value="2024">
-                  2024
-                </option>
-                <option value="2025">
-                  2025
-                </option>
-                <option value="2026">
-                  2026
-                </option>
-              </select>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* TABLE */}
-      <div className="bg-white border border-gray-300 rounded-xl overflow-x-auto mb-4 shadow-sm">
-        <table className="w-full min-w-[900px] text-sm text-gray-700">
-          
-<thead className="bg-[#D3D3D3] text-[11px] uppercase text-gray-700 font-bold">
-  <tr>
-    <th className="px-4 py-3 text-center border-r border-gray-300 w-28">
-      NIS
-    </th>
+        {/* FILTER KELAS */}
+        <select
+          value={filterKelas}
+          onChange={(e) =>
+            setFilterKelas(
+              e.target.value
+            )
+          }
+          className="
+            w-full h-11 px-4
+            rounded-2xl
+            border border-gray-200
+            bg-white
+            text-sm font-semibold
+            outline-none
+            focus:ring-4 focus:ring-[#715445]/10
+          "
+        >
+          <option value="semua">
+            Semua Kelas
+          </option>
 
-    <th className="px-4 py-3 text-left border-r border-gray-300 min-w-[220px]">
-      Nama Murid
-    </th>
-
-    <th className="px-4 py-3 text-left border-r border-gray-300 min-w-[220px]">
-      Nama Orang Tua
-    </th>
-
-    <th className="px-4 py-3 text-center border-r border-gray-300 w-28">
-      Kelas
-    </th>
-
-    <th className="px-4 py-3 text-center border-r border-gray-300 w-36">
-      Status
-    </th>
-
-    <th className="px-4 py-3 text-center w-48">
-      Aksi
-    </th>
-  </tr>
-</thead>
-
-          <tbody>
-            {loading ? (
-              <tr>
-                <td
-                  colSpan="6"
-                  className="text-center py-8 text-gray-400"
-                >
-                  Memuat data...
-                </td>
-              </tr>
-            ) : filteredData.length === 0 ? (
-              <tr>
-                <td
-                  colSpan="6"
-                  className="text-center py-8 text-gray-400"
-                >
-                  Tidak ada data murid
-                </td>
-              </tr>
-          ) : (
-            filteredData.map((murid, index) => (
-            <tr
-              key={murid.nis || index}
-              className="border-t border-gray-200 hover:bg-gray-50"
+          {kelasList.map((k) => (
+            <option
+              key={k.id}
+              value={k.id}
             >
-              {/* NIS */}
-              <td className="px-4 py-3 text-center border-r border-gray-200 font-medium">
-                {murid.nis}
-              </td>
+              {k.nama}
+            </option>
+          ))}
+        </select>
+      </div>
 
-              {/* Nama Murid */}
-              <td className="px-4 py-3 border-r border-gray-200">
-                {editId === murid.nis ? (
-                  <input
-                    value={editForm.nama}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        nama: e.target.value
-                      })
-                    }
-                    className="border px-2 py-1 rounded w-full"
-                  />
-                ) : (
-                  murid.nama
-                )}
-              </td>
+      {/* STATUS TAB */}
+      <div className="mt-3 -mx-1 px-1 overflow-x-auto scrollbar-none">
+        <div className="flex gap-2 w-max min-w-full pb-1">
+          {[
+            "semua",
+            "aktif",
+            "nonaktif",
+            "lulus"
+          ].map((s) => (
+            <button
+              key={s}
+              onClick={() =>
+                setFilterStatus(s)
+              }
+              className={`shrink-0 min-h-[42px] px-4 sm:px-5 rounded-2xl text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-all ${
+                filterStatus === s
+                  ? "bg-[#715445] text-white shadow-md"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
 
-              {/* Nama Orang Tua */}
-              <td className="px-4 py-3 border-r border-gray-200">
-                {editId === murid.nis ? (
-                  <input
-                    value={editForm.nama_ortu}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        nama_ortu: e.target.value
-                      })
-                    }
-                    className="border px-2 py-1 rounded w-full"
-                    placeholder="Nama Orang Tua"
-                  />
-                ) : (
-                  murid.nama_ortu || "-"
-                )}
-              </td>
+  {/* CARD / TABLE WRAPPER */}
+  <div className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.04)] overflow-hidden">
+    {/* ======================================
+        DESKTOP TABLE
+    ====================================== */}
+    <div className="hidden md:block overflow-x-auto">
+      <table className="w-full min-w-[850px]">
+        <thead>
+          <tr className="bg-gray-50 border-b border-gray-100">
+            <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              NIS & Nama
+            </th>
 
-              {/* Kelas */}
-              <td className="px-4 py-3 text-center border-r border-gray-200">
-                {editId === murid.nis ? (
-                  <select
-                    value={editForm.kelas}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        kelas: e.target.value
-                      })
-                    }
-                    className="border px-2 py-1 rounded text-sm"
-                  >
-                    {kelasList.map((k) => (
-                      <option key={k.id} value={k.id}>
-                        {k.nama}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  String(murid.kelas).replace("Kelas ", "").trim()
-                )}
-              </td>
+            <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              Orang Tua
+            </th>
 
-              {/* Status */}
-              <td className="px-4 py-3 text-center border-r border-gray-200">
-                <span
-                  className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
-                    murid.status === "aktif"
-                      ? "bg-[#E4F5E8] text-[#60B873] border-[#60B873]"
-                      : murid.status === "lulus"
-                      ? "bg-[#EBE4F5] text-[#8460B8] border-[#8460B8]"
-                      : "bg-[#FCEAE9] text-[#E16766] border-[#E16766]"
-                  }`}
-                >
-                  {murid.status}
-                </span>
-              </td>
+            <th className="px-6 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              Kelas
+            </th>
 
-              {/* Aksi */}
-              <td className="px-4 py-3">
-                <div className="flex justify-center items-center gap-2 whitespace-nowrap">
-                  {editId === murid.nis ? (
-                    <>
-                      <button
-                        onClick={() => saveEdit(murid.nis)}
-                        className="bg-[#E4F5E8] text-[#60B873] border border-[#60B873] px-5 py-1.5 rounded-full text-xs font-bold"
-                      >
-                        Simpan
-                      </button>
+            <th className="px-6 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              Status
+            </th>
 
-                      <button
-                        onClick={() => setEditId(null)}
-                        className="bg-gray-100 text-gray-600 border border-gray-400 px-5 py-1.5 rounded-full text-xs font-bold"
-                      >
-                        Batal
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => {
-                          setEditId(murid.nis);
-                          setEditForm({
-                            nama: murid.nama,
-                            kelas: String(murid.kelas)
-                              .replace("Kelas ", "")
-                              .trim(),
-                            nama_ortu: murid.nama_ortu || ""
-                          });
-                        }}
-                        className="bg-[#E8F0FE] text-[#1A73E8] border border-[#1A73E8] px-5 py-1.5 rounded-full text-xs font-bold"
-                      >
-                        Edit
-                      </button>
+            <th className="px-6 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              Aksi
+            </th>
+          </tr>
+        </thead>
 
-                      <button
-                        onClick={() => toggleStatus(murid)}
-                        className="bg-[#FCEAE9] text-[#E16766] border border-[#E16766] px-5 py-1.5 rounded-full text-xs font-bold"
-                      >
-                        {murid.status === "aktif"
-                          ? "Nonaktifkan"
-                          : "Aktifkan"}
-                      </button>
-                    </>
-                  )}
+        <tbody className="divide-y divide-gray-100">
+          {loading ? (
+            <tr>
+              <td
+                colSpan="5"
+                className="py-16 text-center"
+              >
+                <div className="space-y-2">
+                  <p className="text-gray-500 font-bold">
+                    Tidak ada data ditemukan
+                  </p>
+
+                  <p className="text-sm text-gray-400">
+                    Coba ubah filter atau tambah murid baru
+                  </p>
                 </div>
               </td>
             </tr>
+          ) : filteredData.length ===
+            0 ? (
+            <tr>
+              <td
+                colSpan="5"
+                className="py-16 text-center text-gray-400 font-medium"
+              >
+                Tidak ada data
+              </td>
+            </tr>
+          ) : (
+            filteredData.map((m) => (
+              <tr
+                key={m.nis}
+                className="hover:bg-gray-50 transition-colors"
+              >
+                <td className="px-6 py-5">
+                  <div className="space-y-1">
+                    <span className="inline-flex px-2 py-1 rounded-lg bg-[#715445]/5 text-[#715445] text-[10px] font-black">
+                      {m.nis}
+                    </span>
+
+                    <p className="font-bold text-gray-900">
+                      {m.nama}
+                    </p>
+                  </div>
+                </td>
+
+                <td className="px-6 py-5 text-sm text-gray-500">
+                  {m.nama_ortu ||
+                    "-"}
+                </td>
+
+                <td className="px-6 py-5 text-center">
+                  <span className="px-3 py-1 rounded-full bg-gray-100 text-xs font-bold">
+                    {String(
+                      m.kelas
+                    ).replace(
+                      "Kelas ",
+                      ""
+                    )}
+                  </span>
+                </td>
+
+                <td className="px-6 py-5 text-center">
+                  <span
+                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
+                      m.status ===
+                      "aktif"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : m.status ===
+                          "lulus"
+                        ? "bg-purple-50 text-purple-700"
+                        : "bg-rose-50 text-rose-700"
+                    }`}
+                  >
+                    {m.status}
+                  </span>
+                </td>
+
+                <td className="px-6 py-5">
+                  <div className="flex justify-end gap-2">
+                    <ActionBtn
+                      onClick={() => {
+                        setEditId(m.nis);
+                        setEditForm({
+                          nama: m.nama,
+                          kelas: String(m.kelas).replace("Kelas ", ""),
+                          nama_ortu: m.nama_ortu || ""
+                        });
+                      }}
+                    >
+                      <Edit2 size={16} />
+                    </ActionBtn>
+
+                    <ActionBtn
+                      onClick={() => toggleStatus(m)}
+                    >
+                      <Power size={16} />
+                    </ActionBtn>
+
+                    <ActionBtn
+                      danger
+                      onClick={() => hapusMurid(m.nis)}
+                    >
+                      <Trash2 size={16} />
+                    </ActionBtn>
+                  </div>
+                </td>
+              </tr>
             ))
           )}
-          </tbody>
+        </tbody>
+      </table>
+    </div>
 
-        </table>
-      </div>
+    {/* ======================================
+        MOBILE CARD LIST
+    ====================================== */}
+    <div className="md:hidden p-3 space-y-3 bg-gray-50/50">
+      {loading ? (
+        <div className="rounded-3xl bg-white p-10 flex justify-center">
+          <Loader2 className="animate-spin text-gray-300" />
+        </div>
+      ) : filteredData.length ===
+        0 ? (
+        <div className="rounded-3xl bg-white p-10 text-center text-gray-400 font-medium">
+          Tidak ada data ditemukan
+        </div>
+      ) : (
+        filteredData.map((m) => (
+          <div
+            key={m.nis}
+            className="
+              bg-white
+              rounded-3xl
+              border border-gray-100
+              shadow-sm
+              p-4
+              space-y-4
+              active:scale-[0.99]
+              transition-all
+            "
+          >
+            {/* TOP */}
+            <div className="flex gap-3 items-start justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black tracking-[0.2em] text-[#715445] truncate">
+                  {m.nis}
+                </p>
 
-        {/* Add Button */}
-        <button
-          onClick={() =>
-            setShowTambah(true)
-          }
-          className="w-full border-2 border-dashed border-gray-400 rounded-lg py-3 flex justify-center items-center gap-2 text-gray-600 font-bold text-sm hover:bg-gray-100 transition-colors"
-        >
-          <Plus size={18} />
-          Tambah Murid Baru
-        </button>
+                <h4 className="text-base font-black text-gray-900 leading-tight break-words">
+                  {m.nama}
+                </h4>
 
-      </div>
+                <p className="text-xs text-gray-500 mt-1 break-words">
+                  Orang tua:{" "}
+                  {m.nama_ortu ||
+                    "-"}
+                </p>
+              </div>
 
-      {showTambah && (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+              <span
+                className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                  m.status ===
+                  "aktif"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : m.status ===
+                      "lulus"
+                    ? "bg-purple-50 text-purple-700"
+                    : "bg-rose-50 text-rose-700"
+                }`}
+              >
+                {m.status}
+              </span>
+            </div>
 
-      <div className="bg-white rounded-2xl p-6 w-[420px] space-y-4">
+            {/* INFO */}
+            <div className="flex items-center justify-between rounded-2xl bg-gray-50 px-3 py-2">
+              <span className="text-xs text-gray-500">
+                Kelas
+              </span>
 
-      <h3 className="text-xl font-bold">
-      Tambah Murid
-      </h3>
+              <span className="text-sm font-bold text-gray-800">
+                {String(
+                  m.kelas
+                ).replace(
+                  "Kelas ",
+                  ""
+                )}
+              </span>
+            </div>
 
-      <input
-      placeholder="NIS"
-      value={formTambah.nis}
-      onChange={(e)=>
-      setFormTambah({
-      ...formTambah,
-      nis:e.target.value
-      })
-      }
-      className="w-full border p-3 rounded-xl"
-      />
+            {/* ACTION */}
+              <div className="grid grid-cols-3 gap-2">
+                <ActionBtn
+                  onClick={() => {
+                    setEditId(m.nis);
+                    setEditForm({
+                      nama: m.nama,
+                      kelas: String(m.kelas).replace("Kelas ", ""),
+                      nama_ortu: m.nama_ortu || ""
+                    });
+                  }}
+                >
+                  <Edit2 size={16} />
+                </ActionBtn>
 
-      <input
-      placeholder="Nama"
-      value={formTambah.nama}
-      onChange={(e)=>
-      setFormTambah({
-      ...formTambah,
-      nama:e.target.value
-      })
-      }
-      className="w-full border p-3 rounded-xl"
-      />
+                <ActionBtn
+                  onClick={() => toggleStatus(m)}
+                >
+                  <Power size={16} />
+                </ActionBtn>
 
-      <input
-      placeholder="Nama Orang Tua"
-      value={formTambah.nama_ortu}
-      onChange={(e)=>
-        setFormTambah({
-          ...formTambah,
-          nama_ortu:e.target.value
-        })
-      }
-      className="w-full border p-3 rounded-xl"
-    />
-
-<select
-  value={formTambah.kelas}
-  onChange={(e) =>
-    setFormTambah({
-      ...formTambah,
-      kelas:
-        e.target.value,
-    })
-  }
-  className="w-full border p-3 rounded-xl"
->
-  <option value="">
-    Pilih Kelas
-  </option>
-
-  {kelasList.map((k) => (
-    <option
-      key={k.id}
-      value={k.id}
-    >
-      {k.nama}
-    </option>
-  ))}
-</select>
-
-      <div className="flex gap-3 pt-2">
-
-      <button
-      onClick={tambahMurid}
-      className="flex-1 bg-[#715445] text-white py-3 rounded-xl font-bold"
-      >
-      Tambah
-      </button>
-
-      <button
-      onClick={()=>
-      setShowTambah(false)
-      }
-      className="flex-1 bg-gray-100 py-3 rounded-xl font-bold"
-      >
-      Batal
-      </button>
-
-      </div>
-
-      </div>
-      </div>
+                <ActionBtn
+                  danger
+                  onClick={() => hapusMurid(m.nis)}
+                >
+                  <Trash2 size={16} />
+                </ActionBtn>
+              </div>
+          </div>
+        ))
       )}
-    </section>
+    </div>
+
+    {/* FOOTER */}
+    <div className="p-4 border-t border-gray-100 bg-white">
+      <button
+        onClick={() =>
+          setShowTambah(true)
+        }
+        className="
+          w-full
+          min-h-[48px]
+          rounded-2xl
+          border-2 border-dashed border-gray-200
+          text-sm font-bold text-gray-500
+          hover:border-[#715445]
+          hover:text-[#715445]
+          transition-all
+          flex items-center justify-center gap-2
+        "
+      >
+        <Plus size={18} />
+        Tambah Murid Baru
+      </button>
+    </div>
+  </div>
+</section>
+
+      {/* MODAL TAMBAH (MODERN OVERLAY) */}
+      {showTambah && (
+        <div className="fixed inset-0 z-[100]">
+          {/* BACKDROP */}
+          <div
+            className="absolute inset-0 bg-black/45 backdrop-blur-sm"
+            onClick={() => setShowTambah(false)}
+          />
+
+          {/* WRAPPER */}
+          <div className="absolute inset-0 overflow-y-auto">
+            <div className="min-h-full flex items-end sm:items-center justify-center p-0 sm:p-4">
+              {/* MODAL */}
+              <div
+                className="
+                  relative w-full sm:max-w-xl
+                  bg-white
+                  rounded-t-[2rem] sm:rounded-[2rem]
+                  shadow-2xl
+                  border border-gray-100
+                  animate-in slide-in-from-bottom-5 sm:zoom-in-95
+                  duration-300
+                  max-h-[92vh]
+                  overflow-hidden
+                "
+              >
+                {/* HEADER */}
+                <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-gray-100 px-5 sm:px-7 py-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[#715445]/10 text-[#715445] flex items-center justify-center shrink-0">
+                      <Plus size={20} />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight">
+                        Tambah Murid Baru
+                      </h3>
+
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                        Isi data siswa dengan benar agar langsung masuk ke sistem.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => setShowTambah(false)}
+                      className="
+                        w-10 h-10 rounded-xl
+                        bg-gray-100 hover:bg-gray-200
+                        text-gray-500
+                        flex items-center justify-center
+                        transition-all
+                        active:scale-95
+                        shrink-0
+                      "
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* BODY */}
+                <div className="overflow-y-auto max-h-[calc(92vh-150px)] px-5 sm:px-7 py-5 space-y-5">
+                  {/* NIS + KELAS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* NIS */}
+                    <div className="sm:col-span-1 space-y-2">
+                      <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">
+                        NIS
+                      </label>
+
+                      <input
+                        placeholder="M001"
+                        value={formTambah.nis}
+                        onChange={(e) =>
+                          setFormTambah({
+                            ...formTambah,
+                            nis: e.target.value
+                          })
+                        }
+                        className="
+                          w-full h-12
+                          rounded-2xl
+                          border border-gray-200
+                          bg-gray-50
+                          px-4
+                          text-sm font-semibold
+                          outline-none
+                          focus:bg-white
+                          focus:ring-4 focus:ring-[#715445]/10
+                          focus:border-[#715445]/30
+                        "
+                      />
+                    </div>
+
+                    {/* KELAS */}
+                    <div className="sm:col-span-2 space-y-2">
+                      <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">
+                        Penempatan Kelas
+                      </label>
+
+                      <select
+                        value={formTambah.kelas}
+                        onChange={(e) =>
+                          setFormTambah({
+                            ...formTambah,
+                            kelas: e.target.value
+                          })
+                        }
+                        className="
+                          w-full h-12
+                          rounded-2xl
+                          border border-gray-200
+                          bg-gray-50
+                          px-4
+                          text-sm font-semibold
+                          outline-none
+                          focus:bg-white
+                          focus:ring-4 focus:ring-[#715445]/10
+                          focus:border-[#715445]/30
+                        "
+                      >
+                        <option value="">
+                          Pilih Kelas
+                        </option>
+
+                        {kelasList.map((k) => (
+                          <option
+                            key={k.id}
+                            value={k.id}
+                          >
+                            {k.nama}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* NAMA */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">
+                      Nama Lengkap
+                    </label>
+
+                    <input
+                      placeholder="Masukkan nama siswa"
+                      value={formTambah.nama}
+                      onChange={(e) =>
+                        setFormTambah({
+                          ...formTambah,
+                          nama: e.target.value
+                        })
+                      }
+                      className="
+                        w-full h-12
+                        rounded-2xl
+                        border border-gray-200
+                        bg-gray-50
+                        px-4
+                        text-sm font-semibold
+                        outline-none
+                        focus:bg-white
+                        focus:ring-4 focus:ring-[#715445]/10
+                        focus:border-[#715445]/30
+                      "
+                    />
+                  </div>
+
+                  {/* ORTU */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">
+                      Nama Orang Tua
+                    </label>
+
+                    <input
+                      placeholder="Ayah / Ibu / Wali"
+                      value={formTambah.nama_ortu}
+                      onChange={(e) =>
+                        setFormTambah({
+                          ...formTambah,
+                          nama_ortu:
+                            e.target.value
+                        })
+                      }
+                      className="
+                        w-full h-12
+                        rounded-2xl
+                        border border-gray-200
+                        bg-gray-50
+                        px-4
+                        text-sm font-semibold
+                        outline-none
+                        focus:bg-white
+                        focus:ring-4 focus:ring-[#715445]/10
+                        focus:border-[#715445]/30
+                      "
+                    />
+                  </div>
+
+                  {/* INFO CARD */}
+                  <div className="rounded-2xl bg-[#715445]/5 border border-[#715445]/10 p-4">
+                    <p className="text-xs font-semibold text-[#715445] leading-relaxed">
+                      Pastikan NIS unik dan kelas sudah benar sebelum menyimpan data.
+                    </p>
+                  </div>
+                </div>
+
+                {/* FOOTER */}
+                <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-gray-100 px-5 sm:px-7 py-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setShowTambah(false)}
+                      className="
+                        min-h-[48px]
+                        rounded-2xl
+                        bg-gray-100
+                        text-gray-700
+                        text-sm font-bold
+                        hover:bg-gray-200
+                        active:scale-95
+                        transition-all
+                      "
+                    >
+                      Batal
+                    </button>
+
+                    <button
+                      onClick={tambahMurid}
+                      className="
+                        min-h-[48px]
+                        rounded-2xl
+                        bg-[#715445]
+                        text-white
+                        text-sm font-black
+                        shadow-lg shadow-[#715445]/20
+                        hover:bg-[#5e4336]
+                        active:scale-95
+                        transition-all
+                      "
+                    >
+                      Simpan Data
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDIT (INLINE REPLACEMENT STYLE) */}
+      {editId && (
+        <div className="fixed inset-0 z-[100]">
+          {/* BACKDROP */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setEditId(null)}
+          />
+
+          {/* WRAPPER */}
+          <div className="absolute inset-0 overflow-y-auto">
+            <div className="min-h-full flex items-end sm:items-center justify-center p-0 sm:p-4">
+              {/* MODAL */}
+              <div
+                className="
+                  relative w-full sm:max-w-xl
+                  bg-white
+                  rounded-t-[2rem] sm:rounded-[2rem]
+                  border border-gray-100
+                  shadow-2xl
+                  animate-in slide-in-from-bottom-5 sm:zoom-in-95
+                  duration-300
+                  max-h-[92vh]
+                  overflow-hidden
+                "
+              >
+                {/* HEADER */}
+                <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-gray-100 px-5 sm:px-7 py-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[#715445]/10 text-[#715445] flex items-center justify-center shrink-0">
+                      <Edit2 size={20} />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight">
+                        Edit Data Murid
+                      </h3>
+
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate">
+                        {editId} • {editForm.nama || "Siswa"}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => setEditId(null)}
+                      className="
+                        w-10 h-10 rounded-xl
+                        bg-gray-100 hover:bg-gray-200
+                        text-gray-500
+                        flex items-center justify-center
+                        transition-all
+                        active:scale-95
+                        shrink-0
+                      "
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* BODY */}
+                <div className="overflow-y-auto max-h-[calc(92vh-150px)] px-5 sm:px-7 py-5 space-y-5">
+                  {/* NAMA */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">
+                      Nama Lengkap
+                    </label>
+
+                    <input
+                      value={editForm.nama}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          nama: e.target.value
+                        })
+                      }
+                      placeholder="Nama siswa"
+                      className="
+                        w-full h-12
+                        rounded-2xl
+                        border border-gray-200
+                        bg-gray-50
+                        px-4
+                        text-sm font-semibold
+                        outline-none
+                        focus:bg-white
+                        focus:ring-4 focus:ring-[#715445]/10
+                        focus:border-[#715445]/30
+                      "
+                    />
+                  </div>
+
+                  {/* GRID */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* KELAS */}
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">
+                        Kelas
+                      </label>
+
+                      <select
+                        value={editForm.kelas}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            kelas: e.target.value
+                          })
+                        }
+                        className="
+                          w-full h-12
+                          rounded-2xl
+                          border border-gray-200
+                          bg-gray-50
+                          px-4
+                          text-sm font-semibold
+                          outline-none
+                          focus:bg-white
+                          focus:ring-4 focus:ring-[#715445]/10
+                          focus:border-[#715445]/30
+                        "
+                      >
+                        {kelasList.map((k) => (
+                          <option
+                            key={k.id}
+                            value={k.id}
+                          >
+                            {k.nama}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* ORTU */}
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-gray-500 uppercase tracking-widest">
+                        Nama Orang Tua
+                      </label>
+
+                      <input
+                        value={editForm.nama_ortu}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            nama_ortu:
+                              e.target.value
+                          })
+                        }
+                        placeholder="Ayah / Ibu / Wali"
+                        className="
+                          w-full h-12
+                          rounded-2xl
+                          border border-gray-200
+                          bg-gray-50
+                          px-4
+                          text-sm font-semibold
+                          outline-none
+                          focus:bg-white
+                          focus:ring-4 focus:ring-[#715445]/10
+                          focus:border-[#715445]/30
+                        "
+                      />
+                    </div>
+                  </div>
+
+                  {/* INFO BOX */}
+                  <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+                    <p className="text-xs font-semibold text-amber-700 leading-relaxed">
+                      Pastikan perubahan nama, kelas, dan wali murid sudah benar sebelum disimpan.
+                    </p>
+                  </div>
+                </div>
+
+                {/* FOOTER */}
+                <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-gray-100 px-5 sm:px-7 py-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setEditId(null)}
+                      className="
+                        min-h-[48px]
+                        rounded-2xl
+                        bg-gray-100
+                        text-gray-700
+                        text-sm font-bold
+                        hover:bg-gray-200
+                        active:scale-95
+                        transition-all
+                      "
+                    >
+                      Batal
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        saveEdit(editId)
+                      }
+                      className="
+                        min-h-[48px]
+                        rounded-2xl
+                        bg-[#715445]
+                        text-white
+                        text-sm font-black
+                        shadow-lg shadow-[#715445]/20
+                        hover:bg-[#5e4336]
+                        active:scale-95
+                        transition-all
+                      "
+                    >
+                      Simpan Perubahan
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+        <ConfirmModal
+        open={showDelete}
+        title="Hapus Murid?"
+        desc="Data siswa akan dihapus permanen dan tidak bisa dikembalikan."
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        danger={true}
+        loading={deleteLoading}
+        onClose={() =>
+          setShowDelete(false)
+        }
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

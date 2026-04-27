@@ -1,25 +1,86 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/guru/SidebarGuru";
-import Header from "../components/guru/HeaderGuru";
-import FooterGuru from "../components/guru/FooterGuru"
+import AppHeader from "./AppHeader";
+import FooterGuru from "../components/guru/FooterGuru";
 
-export default function LayoutOrtu() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+export default function LayoutGuru() {
+  const [isSidebarOpen, setIsSidebarOpen] =
+    useState(true);
 
   return (
-    <div className="flex h-screen bg-[#ECEBEB] text-gray-800 overflow-hidden">
-      {/* Sidebar - Positioned on the left */}
-      <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+    <div
+      className="
+        flex
+        h-screen
+        bg-[#ECEBEB]
+        text-gray-800
+        overflow-hidden
+      "
+    >
+      {/* SAFE RESPONSIVE REFACTOR */}
+      {/* SIDEBAR */}
+      <Sidebar
+        isSidebarOpen={
+          isSidebarOpen
+        }
+        setIsSidebarOpen={
+          setIsSidebarOpen
+        }
+      />
 
-      {/* Main Content Area - includes Header and Page Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* CONTENT WRAPPER */}
+      <div
+        className="
+          flex-1
+          min-w-0
+          flex flex-col
+          overflow-hidden
+        "
+      >
+        {/* SCROLL AREA */}
+        <main
+          className="
+            flex-1
+            min-h-0
+            overflow-y-auto
+            overflow-x-hidden
+            no-scrollbar
 
-        <main className="flex-1 p-6 overflow-y-auto no-scrollbar">
-          <Header isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-          <Outlet />
+            px-3 py-3
+            sm:px-4 sm:py-4
+            lg:px-6 lg:py-5
+          "
+        >
+          {/* HEADER */}
+          <div className="mb-4 sm:mb-5">
+            <AppHeader
+              isSidebarOpen={
+                isSidebarOpen
+              }
+              setIsSidebarOpen={
+                setIsSidebarOpen
+              }
+            />
+          </div>
+
+          {/* PAGE CONTENT */}
+          <div
+            className="
+              w-full
+              max-w-full
+              pb-6
+              sm:pb-8
+            "
+          >
+            <Outlet />
+          </div>
         </main>
-        <FooterGuru></FooterGuru>
+
+        {/* FOOTER */}
+        <div className="shrink-0">
+          <FooterGuru />
+        </div>
       </div>
     </div>
   );

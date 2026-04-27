@@ -20,7 +20,6 @@ const DashboardOrtu = () => {
     Alpha: 0,
   });
 
-  const [checkin, setCheckin] = useState("-");
   const [loadingData, setLoadingData] = useState(false);
 
   /* ================= LOAD DATA ANAK ================= */
@@ -48,25 +47,22 @@ const DashboardOrtu = () => {
 
       const hariIni = res.data?.hariIni || [];
       const ringkasan = res.data?.ringkasan || {};
+      const updateTerakhir =
+        res.data?.updateTerakhir || "-";
+setTimeout(() => {
+  setSubjects(hariIni);
 
-      setTimeout(() => {
-        setSubjects(hariIni);
+  setSummary({
+    Hadir: ringkasan.Hadir || 0,
+    Izin: ringkasan.Izin || 0,
+    Sakit: ringkasan.Sakit || 0,
+    Alpha: ringkasan.Alpha || 0,
+  });
 
-        setSummary({
-          Hadir: ringkasan.Hadir || 0,
-          Izin: ringkasan.Izin || 0,
-          Sakit: ringkasan.Sakit || 0,
-          Alpha: ringkasan.Alpha || 0,
-        });
+  setLastUpdate(updateTerakhir);
 
-        if (hariIni.length > 0) {
-          setCheckin(hariIni[0].jam || "-");
-        } else {
-          setCheckin("-");
-        }
-
-        setLoadingData(false);
-      }, 450);
+  setLoadingData(false);
+}, 450);
     } catch (err) {
       console.log(err);
       setLoadingData(false);
@@ -147,14 +143,8 @@ const alphaHariIni = subjects.filter(
 ).length;
 
 /* ================= UPDATE TERAKHIR ================= */
-const sudahAbsen = subjects.filter(
-  (x) => x.status?.toLowerCase() !== "belum"
-);
-
-const lastUpdate =
-  sudahAbsen.length > 0
-    ? sudahAbsen[sudahAbsen.length - 1].jam
-    : "-";
+const [lastUpdate, setLastUpdate] =
+  useState("-");
 
   return (
     <div className="space-y-6">

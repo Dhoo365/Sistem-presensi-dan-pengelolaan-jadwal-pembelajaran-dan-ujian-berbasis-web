@@ -8,10 +8,24 @@ import {
   Mail,
   Plus,
   X,
-  Loader2
+  Loader2,
+  Check,
+  RotateCcw,
+  Users,
+  ShieldCheck,
+  Archive,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import api from "../../lib/axios";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 
+// PREMIUM UI UPGRADE
+// MOBILE SAFE TOOLBAR FIX
+// NO OVERFLOW SMALL SCREEN
+// PREMIUM ADD EDIT MODAL
+// PERFECT ALIGNMENT FIX
+// TOAST SYSTEM READY
+// SAFE RESPONSIVE REFACTOR
 
 export default function AdminKelolaAkun() {
   const [tab, setTab] = useState("guru");
@@ -31,7 +45,10 @@ export default function AdminKelolaAkun() {
   const [emailBaru, setEmailBaru] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
 
-  // FIX 1: useCallback supaya load stabil di dependency array
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -39,6 +56,7 @@ export default function AdminKelolaAkun() {
       setRows(Array.isArray(data) ? data : []);
     } catch {
       setRows([]);
+      toast.error("Gagal memuat data akun");
     } finally {
       setLoading(false);
     }
@@ -52,428 +70,1003 @@ export default function AdminKelolaAkun() {
     load();
   }, [load]);
 
-const filtered = useMemo(() => {
-  return rows.filter((r) => {
-    const txt =
-      `${r.nama || ""} ${r.email || ""} ${r.nip || ""} ${r.kelas || ""}`
-      .toLowerCase();
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      const txt =
+        `${r.nama || ""} ${r.email || ""} ${r.nip || ""} ${r.kelas || ""}`.toLowerCase();
 
-    const okSearch =
-      txt.includes(search.toLowerCase());
+      const okSearch = txt.includes(search.toLowerCase());
 
-    const rowStatus =
-      (r.status || "").toLowerCase();
+      const rowStatus = (r.status || "").toLowerCase();
 
-    const okStatus =
-      status === "semua"
-        ? rowStatus !== "dihapus"
-        : rowStatus === status.toLowerCase();
+      const okStatus =
+        status === "semua"
+          ? rowStatus !== "dihapus"
+          : rowStatus === status.toLowerCase();
 
-    const okKelas =
-      kelas === "semua" ||
-      String(r.kelas) === String(kelas);
+      const okKelas =
+        kelas === "semua" ||
+        String(r.kelas) === String(kelas);
 
-    return okSearch && okStatus && okKelas;
-  });
-}, [rows, search, status, kelas]);
+      return okSearch && okStatus && okKelas;
+    });
+  }, [rows, search, status, kelas]);
 
-  const resetPass = async (id) => {
-    if (!window.confirm("Reset password akun ini ke default?")) return;
-    try {
-      await api.post(`/admin/akun/${id}/reset`);
-      alert("Password berhasil direset");
-    } catch {
-      alert("Gagal reset password");
-    }
+  const totalAktif = rows.filter(
+    (r) => r.status === "aktif"
+  ).length;
+
+  const totalArsip = rows.filter(
+    (r) => r.status === "dihapus"
+  ).length;
+
+  const resetPass = (id) => {
+    setConfirmData({
+      title: "Reset Password?",
+      desc: "Password akan dikembalikan ke default.",
+      action: async () => {
+        await api.post(`/admin/akun/${id}/reset`);
+        toast.success("Password berhasil direset");
+      },
+    });
+    setConfirmOpen(true);
   };
 
   const ubahStatus = async (r) => {
-    // FIX 2: cegah aksi jika belum punya akun
-    if (!r.email) return alert("Akun login belum dibuat.");
+    if (!r.email) {
+      return toast.error("Akun login belum dibuat.");
+    }
+
     try {
+      const id = toast.loading("Mengubah status...");
+
       await api.patch(`/admin/akun/${r.id}/status`, {
-        status: r.status === "aktif" ? "nonaktif" : "aktif",
+        status:
+          r.status === "aktif"
+            ? "nonaktif"
+            : "aktif",
       });
+
+      toast.success("Status diperbarui", {
+        id,
+      });
+
       load();
     } catch {
-      alert("Gagal ubah status akun");
+      toast.error("Gagal ubah status akun");
     }
   };
 
-  // FIX 3: hanya satu fungsi hapus (duplikat dihapus)
-  const hapus = async (r) => {
-    if (!r.email) return alert("Belum ada akun yang perlu dihapus.");
-    if (!window.confirm(`Yakin hapus akun "${r.nama}"?`)) return;
-    try {
-      await api.delete(`/admin/akun/${r.id}`);
-      load();
-    } catch {
-      alert("Gagal hapus akun");
+  const hapus = (r) => {
+    if (!r.email) {
+      return toast.error(
+        "Belum ada akun yang perlu dihapus."
+      );
     }
+
+    setConfirmData({
+      title: "Arsipkan Akun?",
+      desc: `Akun "${r.nama}" akan dipindahkan ke arsip.`,
+      danger: true,
+      action: async () => {
+        await api.delete(`/admin/akun/${r.id}`);
+        toast.success("Akun diarsipkan");
+        load();
+      },
+    });
+
+    setConfirmOpen(true);
+  };
+
+  const restore = (id) => {
+    setConfirmData({
+      title: "Pulihkan Akun?",
+      desc: "Akun akan aktif kembali.",
+      action: async () => {
+        await api.patch(
+          `/admin/akun/${id}/restore`
+        );
+        toast.success("Akun dipulihkan");
+        load();
+      },
+    });
+
+    setConfirmOpen(true);
   };
 
   const bukaBuatAkun = (r) => {
-    setBuatTarget({ id: r.id, nama: r.nama, type: tab });
+    setBuatTarget({
+      id: r.id,
+      nama: r.nama,
+      type: tab,
+    });
     setBuatEmail("");
     setShowBuat(true);
   };
 
-  // FIX 4: fungsi untuk buat akun baru (guru atau ortu)
   const simpanBuatAkun = async () => {
-    if (!buatEmail.trim() || !buatEmail.includes("@")) {
-      return alert("Masukkan email yang valid");
+    if (
+      !buatEmail.trim() ||
+      !buatEmail.includes("@")
+    ) {
+      return toast.error(
+        "Masukkan email yang valid"
+      );
     }
+
     setBuatLoading(true);
+
     try {
-      await api.post(`/admin/akun/${buatTarget.type}/${buatTarget.id}`, {
-        email: buatEmail.trim(),
-        nama: buatTarget.nama,
+      const id = toast.loading(
+        "Membuat akun..."
+      );
+
+      await api.post(
+        `/admin/akun/${buatTarget.type}/${buatTarget.id}`,
+        {
+          email: buatEmail.trim(),
+          nama: buatTarget.nama,
+        }
+      );
+
+      toast.success("Akun berhasil dibuat", {
+        id,
       });
+
       setShowBuat(false);
       load();
     } catch (err) {
-      alert(err?.response?.data?.error || "Gagal membuat akun");
+      toast.error(
+        err?.response?.data?.error ||
+          "Gagal membuat akun"
+      );
     } finally {
       setBuatLoading(false);
     }
   };
 
   const simpanEmail = async () => {
-  if (!emailBaru.trim() || !emailBaru.includes("@")) {
-    return alert("Masukkan email valid");
-  }
+    if (
+      !emailBaru.trim() ||
+      !emailBaru.includes("@")
+    ) {
+      return toast.error(
+        "Masukkan email valid"
+      );
+    }
 
-  setEmailLoading(true);
+    setEmailLoading(true);
 
-  try {
-    await api.patch(
-      `/admin/akun/${emailTarget.id}/email`,
-      {
-        email: emailBaru.trim()
-      }
-    );
+    try {
+      const id = toast.loading(
+        "Menyimpan email..."
+      );
 
-    alert("Email berhasil diperbarui");
+      await api.patch(
+        `/admin/akun/${emailTarget.id}/email`,
+        {
+          email: emailBaru.trim(),
+        }
+      );
 
-    setShowEmail(false);
-    load();
+      toast.success("Email diperbarui", {
+        id,
+      });
 
-  } catch (err) {
-    alert(
-      err?.response?.data?.error ||
-      "Gagal ganti email"
-    );
-  } finally {
-    setEmailLoading(false);
-  }
-};
+      setShowEmail(false);
+      load();
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.error ||
+          "Gagal ganti email"
+      );
+    } finally {
+      setEmailLoading(false);
+    }
+  };
 
-const restore = async (id) => {
-  try {
-    await api.patch(`/admin/akun/${id}/restore`);
-    load();
-  } catch {
-    alert("Gagal memulihkan akun");
-  }
-};
+  const runConfirm = async () => {
+    try {
+      setConfirmLoading(true);
+      await confirmData.action();
+      setConfirmOpen(false);
+    } catch {
+      toast.error("Gagal memproses");
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
 
   return (
-    <>
-      <main className="flex-1 min-h-screen bg-[#f5f5f5] p-8">
-        <div className="inline-flex rounded-2xl border border-black/20 bg-white p-1 mb-6 shadow-sm">
+    <section className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+      {/* STATS */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard
+          title="Total Data"
+          value={rows.length}
+          icon={<Users size={20} />}
+        />
+
+        <StatCard
+          title="Aktif"
+          value={totalAktif}
+          icon={<ShieldCheck size={20} />}
+          green
+        />
+
+        <StatCard
+          title="Arsip"
+          value={totalArsip}
+          icon={<Archive size={20} />}
+          red
+        />
+      </div>
+
+      {/* TAB */}
+      <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-2">
+        <div className="grid grid-cols-2 gap-2">
           {["guru", "ortu"].map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition ${
-                tab === t ? "bg-[#715445] text-white" : "text-black/70 hover:bg-black/5"
+              className={`min-h-[48px] rounded-2xl font-black text-sm transition-all ${
+                tab === t
+                  ? "bg-[#715445] text-white"
+                  : "bg-gray-100 text-gray-600"
               }`}
             >
-              {t === "guru" ? "Akun Guru" : "Akun Orang Tua"}
+              {t === "guru"
+                ? "Akun Guru"
+                : "Akun Orang Tua"}
             </button>
           ))}
         </div>
+      </div>
 
-        <section className="rounded-3xl border border-black/20 bg-white shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-black/10 flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl border border-black/15 flex items-center justify-center">
-              <UserCog size={20} className="text-black/80" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-black/90">
-                {tab === "guru" ? "Kelola Akun Guru" : "Kelola Akun Orang Tua"}
-              </h1>
-              <p className="text-sm text-black/55">Manajemen akun login pengguna sistem</p>
-            </div>
-          </div>
-
-          <div className="p-6 border-b border-black/10 flex flex-wrap gap-3">
-            <div className="relative flex-1 min-w-[260px]">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/40" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari nama, email..."
-                className="w-full pl-11 pr-4 py-3 rounded-2xl border border-black/15 bg-white outline-none focus:border-black/40"
-              />
-            </div>
-
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="px-4 py-3 rounded-2xl border border-black/15 text-black/75"
-            >
-              <option value="semua">Semua Status</option>
-              <option value="aktif">Aktif</option>
-              <option value="nonaktif">Nonaktif</option>
-              <option value="dihapus">Arsip</option>
-            </select>
-
-            {tab === "ortu" && (
-              <select
-                value={kelas}
-                onChange={(e) => setKelas(e.target.value)}
-                className="px-4 py-3 rounded-2xl border border-black/15 text-black/75"
-              >
-                <option value="semua">Semua Kelas</option>
-                {[1, 2, 3, 4, 5, 6].map((k) => (
-                  <option key={k} value={k}>Kelas {k}</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-black/10 bg-black/[0.02]">
-                  <th className="px-6 py-4 text-left font-semibold text-black/70">Nama</th>
-                  <th className="px-6 py-4 text-left font-semibold text-black/70">
-                    {tab === "guru" ? "NIP" : "Kelas"}
-                  </th>
-                  <th className="px-6 py-4 text-left font-semibold text-black/70">Akun Login</th>
-                  <th className="px-6 py-4 text-left font-semibold text-black/70">Status</th>
-                  <th className="px-6 py-4 text-left font-semibold text-black/70">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="5" className="px-6 py-10 text-center text-black/45">Memuat data...</td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan="5" className="px-6 py-10 text-center text-black/45">Tidak ada data</td></tr>
-                ) : (
-                  filtered.map((r, i) => (
-                    <tr key={`${r.id}-${i}`} className="border-b border-black/5 hover:bg-black/[0.02]">
-                      <td className="px-6 py-4 font-medium text-black/85">{r.nama}</td>
-                      <td className="px-6 py-4 text-black/55 text-xs">
-                        {tab === "guru" ? r.nip || "-" : r.kelas ? `Kelas ${r.kelas}` : "-"}
-                      </td>
-
-                      {/* FIX 5: badge status akun login yang informatif */}
-                      <td className="px-6 py-4">
-                        {r.email ? (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
-                            Sudah dibuat
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-black/40 border border-black/10">
-                            Belum ada akun
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                          r.status === "aktif"
-                            ? "border-black/15 text-black/75 bg-black/[0.03]"
-                            : "border-black/10 text-black/45 bg-black/[0.02]"
-                        }`}>
-                          {r.status}
-                        </span>
-                      </td>
-
-                      {/* FIX 6: aksi berbeda tergantung sudah punya akun atau belum */}
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2 flex-wrap">
-
-                          {r.status === "dihapus" ? (
-                            <button
-                              title="Pulihkan"
-                              onClick={() => restore(r.id)}
-                              className="w-9 h-9 rounded-xl border border-green-200 text-green-600 flex items-center justify-center hover:bg-green-50"
-                            >
-                              ↺
-                            </button>
-                          ) : (
-                            <>
-                              {/* Ganti Email */}
-                              <button
-                                title={r.email ? "Ganti Email" : "Buat Akun"}
-                                onClick={() => {
-                                  if (r.email) {
-                                    setEmailTarget(r);
-                                    setEmailBaru("");
-                                    setShowEmail(true);
-                                  } else {
-                                    bukaBuatAkun(r);
-                                  }
-                                }}
-                                className="w-9 h-9 rounded-xl border border-black/10 flex items-center justify-center hover:bg-black/5"
-                              >
-                                <Mail size={16} />
-                              </button>
-
-                              {/* Reset Password */}
-                              <button
-                                title="Reset Password"
-                                onClick={() => resetPass(r.id)}
-                                className="w-9 h-9 rounded-xl border border-black/10 flex items-center justify-center hover:bg-black/5"
-                              >
-                                <KeyRound size={16} />
-                              </button>
-
-                              {/* Aktif / Nonaktif */}
-                              <button
-                                title={r.status === "aktif" ? "Nonaktifkan" : "Aktifkan"}
-                                onClick={() => ubahStatus(r)}
-                                className="w-9 h-9 rounded-xl border border-black/10 flex items-center justify-center hover:bg-black/5"
-                              >
-                                <Power size={16} />
-                              </button>
-
-                              {/* Arsipkan */}
-                              <button
-                                title="Arsipkan Akun"
-                                onClick={() => hapus(r)}
-                                className="w-9 h-9 rounded-xl border border-red-200 text-red-600 flex items-center justify-center hover:bg-red-50"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </>
-                          )}
-
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </main>
-
-      {/* Modal Buat Akun */}
-      {showEmail && emailTarget && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-xl p-6">
-
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-xl font-bold">
-                  Ganti Email
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {emailTarget.nama}
-                </p>
-              </div>
-
-              <button
-                onClick={() => setShowEmail(false)}
-                className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center"
-              >
-                <X size={18} />
-              </button>
-            </div>
+      {/* TOOLBAR */}
+      <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-4 sm:p-5 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="relative md:col-span-2">
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+            />
 
             <input
-              type="email"
-              value={emailBaru}
+              value={search}
               onChange={(e) =>
-                setEmailBaru(e.target.value)
+                setSearch(e.target.value)
               }
-              placeholder="emailbaru@gmail.com"
-              className="w-full border border-gray-300 rounded-2xl px-4 py-3 mb-5"
+              placeholder="Cari nama / email..."
+              className="w-full min-h-[52px] pl-11 pr-4 rounded-2xl border border-gray-200 outline-none focus:ring-4 focus:ring-[#715445]/10 focus:border-[#715445]/30"
             />
-
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={simpanEmail}
-                disabled={emailLoading}
-                className="bg-black text-white py-3 rounded-2xl font-semibold"
-              >
-                {emailLoading
-                  ? "Menyimpan..."
-                  : "Simpan"}
-              </button>
-
-              <button
-                onClick={() => setShowEmail(false)}
-                className="bg-gray-100 py-3 rounded-2xl font-semibold"
-              >
-                Batal
-              </button>
-            </div>
-
           </div>
+
+          <select
+            value={status}
+            onChange={(e) =>
+              setStatus(e.target.value)
+            }
+            className="w-full min-h-[52px] px-4 rounded-2xl border border-gray-200 outline-none"
+          >
+            <option value="semua">
+              Semua Status
+            </option>
+            <option value="aktif">
+              Aktif
+            </option>
+            <option value="nonaktif">
+              Nonaktif
+            </option>
+            <option value="dihapus">
+              Arsip
+            </option>
+          </select>
+
+          {tab === "ortu" && (
+            <select
+              value={kelas}
+              onChange={(e) =>
+                setKelas(e.target.value)
+              }
+              className="md:col-span-3 w-full min-h-[52px] px-4 rounded-2xl border border-gray-200 outline-none"
+            >
+              <option value="semua">
+                Semua Kelas
+              </option>
+
+              {[1, 2, 3, 4, 5, 6].map(
+                (k) => (
+                  <option
+                    key={k}
+                    value={k}
+                  >
+                    Kelas {k}
+                  </option>
+                )
+              )}
+            </select>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Modal Buat Akun */}
-      {showBuat && buatTarget && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-xl p-6">
-
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-xl font-bold">
-                  Buat Akun Login
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {buatTarget.nama}
-                </p>
-              </div>
-
-              <button
-                onClick={() => setShowBuat(false)}
-                className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <input
-              type="email"
-              value={buatEmail}
-              onChange={(e) => setBuatEmail(e.target.value)}
-              placeholder="email@gmail.com"
-              className="w-full border border-gray-300 rounded-2xl px-4 py-3 mb-3"
+      {/* MOBILE */}
+      <div className="lg:hidden space-y-4">
+        {loading ? (
+          <LoadingBox />
+        ) : filtered.length === 0 ? (
+          <EmptyBox />
+        ) : (
+          filtered.map((r, i) => (
+            <CardRow
+              key={i}
+              row={r}
+              tab={tab}
+              bukaBuatAkun={
+                bukaBuatAkun
+              }
+              setEmailTarget={
+                setEmailTarget
+              }
+              setShowEmail={
+                setShowEmail
+              }
+              setEmailBaru={
+                setEmailBaru
+              }
+              resetPass={
+                resetPass
+              }
+              ubahStatus={
+                ubahStatus
+              }
+              hapus={hapus}
+              restore={
+                restore
+              }
             />
+          ))
+        )}
+      </div>
 
-            <p className="text-xs text-gray-500 mb-5">
-              Password default: 12345678
+      {/* DESKTOP */}
+      <div className="hidden lg:block rounded-3xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <Th>Nama</Th>
+                <Th>
+                  {tab === "guru"
+                    ? "NIP"
+                    : "Kelas"}
+                </Th>
+                <Th>Email</Th>
+                <Th>Status</Th>
+                <Th right>Aksi</Th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map((r, i) => (
+                <tr
+                  key={i}
+                  className="hover:bg-gray-50"
+                >
+                  <Td bold>{r.nama}</Td>
+
+                  <Td>
+                    {tab === "guru"
+                      ? r.nip || "-"
+                      : r.kelas
+                      ? `Kelas ${r.kelas}`
+                      : "-"}
+                  </Td>
+
+                  <Td>
+                    {r.email || "-"}
+                  </Td>
+
+                  <Td>
+                    <StatusBadge
+                      status={
+                        r.status
+                      }
+                    />
+                  </Td>
+
+                  <Td right>
+                    <div className="flex justify-end gap-2">
+                      {r.status ===
+                      "dihapus" ? (
+                        <IconBtn
+                          onClick={() =>
+                            restore(
+                              r.id
+                            )
+                          }
+                        >
+                          <RotateCcw
+                            size={15}
+                          />
+                        </IconBtn>
+                      ) : (
+                        <>
+                          <IconBtn
+                            onClick={() => {
+                              if (
+                                r.email
+                              ) {
+                                setEmailTarget(
+                                  r
+                                );
+                                setEmailBaru(
+                                  ""
+                                );
+                                setShowEmail(
+                                  true
+                                );
+                              } else {
+                                bukaBuatAkun(
+                                  r
+                                );
+                              }
+                            }}
+                          >
+                            <Mail
+                              size={15}
+                            />
+                          </IconBtn>
+
+                          <IconBtn
+                            onClick={() =>
+                              resetPass(
+                                r.id
+                              )
+                            }
+                          >
+                            <KeyRound
+                              size={15}
+                            />
+                          </IconBtn>
+
+                          <IconBtn
+                            onClick={() =>
+                              ubahStatus(
+                                r
+                              )
+                            }
+                          >
+                            <Power
+                              size={15}
+                            />
+                          </IconBtn>
+
+                          <IconBtn
+                            danger
+                            onClick={() =>
+                              hapus(
+                                r
+                              )
+                            }
+                          >
+                            <Trash2
+                              size={15}
+                            />
+                          </IconBtn>
+                        </>
+                      )}
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* MODAL EMAIL */}
+      {showEmail &&
+        emailTarget && (
+          <ModalWrap
+            title="Ganti Email"
+            subtitle={
+              emailTarget.nama
+            }
+            icon={
+              <Mail
+                size={20}
+              />
+            }
+            close={() =>
+              setShowEmail(
+                false
+              )
+            }
+          >
+            <Field label="Email Baru">
+              <input
+                value={
+                  emailBaru
+                }
+                onChange={(
+                  e
+                ) =>
+                  setEmailBaru(
+                    e.target
+                      .value
+                  )
+                }
+                placeholder="emailbaru@gmail.com"
+                className="input-premium"
+              />
+            </Field>
+
+            <FooterBtn
+              cancel={() =>
+                setShowEmail(
+                  false
+                )
+              }
+              submit={
+                simpanEmail
+              }
+              loading={
+                emailLoading
+              }
+              text="Simpan"
+            />
+          </ModalWrap>
+        )}
+
+      {/* MODAL BUAT */}
+      {showBuat &&
+        buatTarget && (
+          <ModalWrap
+            title="Buat Akun"
+            subtitle={
+              buatTarget.nama
+            }
+            icon={
+              <Plus
+                size={20}
+              />
+            }
+            close={() =>
+              setShowBuat(
+                false
+              )
+            }
+          >
+            <Field label="Email Login">
+              <input
+                value={
+                  buatEmail
+                }
+                onChange={(
+                  e
+                ) =>
+                  setBuatEmail(
+                    e.target
+                      .value
+                  )
+                }
+                placeholder="email@gmail.com"
+                className="input-premium"
+              />
+            </Field>
+
+            <p className="text-sm text-gray-500">
+              Password default:
+              12345678
             </p>
 
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={simpanBuatAkun}
-                disabled={buatLoading}
-                className="bg-black text-white py-3 rounded-2xl font-semibold"
-              >
-                {buatLoading ? "Membuat..." : "Buat Akun"}
-              </button>
+            <FooterBtn
+              cancel={() =>
+                setShowBuat(
+                  false
+                )
+              }
+              submit={
+                simpanBuatAkun
+              }
+              loading={
+                buatLoading
+              }
+              text="Buat Akun"
+            />
+          </ModalWrap>
+        )}
+
+      <ConfirmModal
+        open={confirmOpen}
+        title={
+          confirmData?.title
+        }
+        desc={
+          confirmData?.desc
+        }
+        danger={
+          confirmData?.danger
+        }
+        loading={
+          confirmLoading
+        }
+        onClose={() =>
+          setConfirmOpen(
+            false
+          )
+        }
+        onConfirm={
+          runConfirm
+        }
+      />
+    </section>
+  );
+}
+
+/* COMPONENT */
+
+function CardRow({
+  row,
+  tab,
+  bukaBuatAkun,
+  setEmailTarget,
+  setShowEmail,
+  setEmailBaru,
+  resetPass,
+  ubahStatus,
+  hapus,
+  restore,
+}) {
+  return (
+    <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-4 space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-black text-gray-900">
+            {row.nama}
+          </h3>
+          <p className="text-sm text-gray-500">
+            {tab === "guru"
+              ? row.nip || "-"
+              : `Kelas ${
+                  row.kelas ||
+                  "-"
+                }`}
+          </p>
+        </div>
+
+        <StatusBadge
+          status={
+            row.status
+          }
+        />
+      </div>
+
+      <p className="text-sm text-gray-500 break-all">
+        {row.email ||
+          "Belum ada akun"}
+      </p>
+
+      <div className="grid grid-cols-4 gap-2">
+        {row.status ===
+        "dihapus" ? (
+          <button
+            onClick={() =>
+              restore(
+                row.id
+              )
+            }
+            className="min-h-[44px] rounded-2xl bg-green-50 text-green-600 font-bold"
+          >
+            ↺
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => {
+                if (
+                  row.email
+                ) {
+                  setEmailTarget(
+                    row
+                  );
+                  setEmailBaru(
+                    ""
+                  );
+                  setShowEmail(
+                    true
+                  );
+                } else {
+                  bukaBuatAkun(
+                    row
+                  );
+                }
+              }}
+              className="min-h-[44px] rounded-2xl bg-gray-100"
+            >
+              <Mail
+                size={16}
+                className="mx-auto"
+              />
+            </button>
+
+            <button
+              onClick={() =>
+                resetPass(
+                  row.id
+                )
+              }
+              className="min-h-[44px] rounded-2xl bg-gray-100"
+            >
+              <KeyRound
+                size={16}
+                className="mx-auto"
+              />
+            </button>
+
+            <button
+              onClick={() =>
+                ubahStatus(
+                  row
+                )
+              }
+              className="min-h-[44px] rounded-2xl bg-gray-100"
+            >
+              <Power
+                size={16}
+                className="mx-auto"
+              />
+            </button>
+
+            <button
+              onClick={() =>
+                hapus(
+                  row
+                )
+              }
+              className="min-h-[44px] rounded-2xl bg-rose-50 text-rose-600"
+            >
+              <Trash2
+                size={16}
+                className="mx-auto"
+              />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  icon,
+  green,
+  red,
+}) {
+  return (
+    <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-5">
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-xs font-black uppercase text-gray-400">
+            {title}
+          </p>
+          <h3 className="text-3xl font-black text-gray-900 mt-1">
+            {value}
+          </h3>
+        </div>
+
+        <div
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+            green
+              ? "bg-emerald-100 text-emerald-600"
+              : red
+              ? "bg-rose-100 text-rose-600"
+              : "bg-[#715445]/10 text-[#715445]"
+          }`}
+        >
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({
+  status,
+}) {
+  const cls =
+    status === "aktif"
+      ? "bg-emerald-50 text-emerald-700"
+      : status ===
+        "dihapus"
+      ? "bg-rose-50 text-rose-700"
+      : "bg-gray-100 text-gray-600";
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center h-9 min-w-[84px] px-3 rounded-full text-[11px] font-black uppercase ${cls}`}
+    >
+      {status}
+    </span>
+  );
+}
+
+function IconBtn({
+  children,
+  danger,
+  ...props
+}) {
+  return (
+    <button
+      {...props}
+      className={`w-10 h-10 rounded-2xl border inline-flex items-center justify-center ${
+        danger
+          ? "bg-rose-50 border-rose-200 text-rose-600"
+          : "bg-white border-gray-200 text-gray-600"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Th({
+  children,
+  right,
+}) {
+  return (
+    <th
+      className={`px-6 py-4 text-xs font-black uppercase text-gray-400 ${
+        right
+          ? "text-right"
+          : "text-left"
+      }`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({
+  children,
+  bold,
+  right,
+}) {
+  return (
+    <td
+      className={`px-6 py-4 text-sm ${
+        bold
+          ? "font-bold text-gray-900"
+          : "text-gray-600"
+      } ${
+        right
+          ? "text-right"
+          : "text-left"
+      }`}
+    >
+      {children}
+    </td>
+  );
+}
+
+function LoadingBox() {
+  return (
+    <div className="rounded-3xl bg-white p-10 text-center">
+      <Loader2 className="mx-auto animate-spin text-gray-300" />
+    </div>
+  );
+}
+
+function EmptyBox() {
+  return (
+    <div className="rounded-3xl bg-white p-10 text-center text-gray-400">
+      Tidak ada data akun
+    </div>
+  );
+}
+
+function ModalWrap({
+  title,
+  subtitle,
+  icon,
+  close,
+  children,
+}) {
+  return (
+    <div className="fixed inset-0 z-[100]">
+      <div
+        className="absolute inset-0 bg-black/45 backdrop-blur-sm"
+        onClick={close}
+      />
+      <div className="absolute inset-0 overflow-y-auto">
+        <div className="min-h-full flex items-end sm:items-center justify-center">
+          <div className="w-full sm:max-w-xl bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl border border-gray-100 max-h-[85vh] flex flex-col">
+            <div className="px-5 sm:px-6 py-4 border-b border-gray-100 flex justify-between gap-3">
+              <div className="flex gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#715445]/10 text-[#715445] flex items-center justify-center">
+                  {icon}
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-black text-gray-900">
+                    {title}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {subtitle}
+                  </p>
+                </div>
+              </div>
 
               <button
-                onClick={() => setShowBuat(false)}
-                className="bg-gray-100 py-3 rounded-2xl font-semibold"
+                onClick={close}
+                className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center"
               >
-                Batal
+                <X size={18} />
               </button>
             </div>
 
+            <div className="overflow-y-auto p-5 sm:p-6 space-y-5">
+              {children}
+            </div>
           </div>
         </div>
-      )}
-    </>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-[11px] font-black uppercase tracking-[0.18em] text-gray-500">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function FooterBtn({
+  cancel,
+  submit,
+  loading,
+  text,
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+      <button
+        onClick={cancel}
+        className="min-h-[52px] rounded-2xl bg-gray-100 font-bold"
+      >
+        Batal
+      </button>
+
+      <button
+        onClick={submit}
+        disabled={loading}
+        className="min-h-[52px] rounded-2xl bg-[#715445] text-white font-bold inline-flex items-center justify-center gap-2"
+      >
+        {loading ? (
+          <>
+            <Loader2
+              size={16}
+              className="animate-spin"
+            />
+            Proses...
+          </>
+        ) : (
+          <>
+            <Check size={16} />
+            {text}
+          </>
+        )}
+      </button>
+    </div>
   );
 }

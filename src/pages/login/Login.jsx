@@ -1,20 +1,31 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User, Lock, Eye, EyeOff } from "lucide-react";
+import {
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+} from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import AuthLayout from "../../layouts/AuthLayout";
-
-// Pastikan path sesuai project kamu
-import bg from "../../assets/foto/background.png";
-import logo from "../../assets/foto/logo.png";
+import toast from "react-hot-toast";
 
 export default function Login() {
   const navigate = useNavigate();
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  // SAFE LOGIN FUNCTION PRESERVED
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,7 +33,11 @@ export default function Login() {
     try {
       setLoading(true);
 
-      // Login ke Supabase Auth
+      const id =
+        toast.loading(
+          "Memverifikasi akun..."
+        );
+
       const { data, error } =
         await supabase.auth.signInWithPassword({
           email,
@@ -30,16 +45,21 @@ export default function Login() {
         });
 
       if (error) {
-        alert(error.message);
+        toast.error(
+          error.message,
+          { id }
+        );
         return;
       }
 
-      const userId = data.user.id;
+      const userId =
+        data.user.id;
 
-      // Simpan token JWT untuk digunakan oleh axios ke backend
-      localStorage.setItem("token", data.session.access_token);
+      localStorage.setItem(
+        "token",
+        data.session.access_token
+      );
 
-      // Ambil profile user
       const {
         data: profile,
         error: profileError,
@@ -49,45 +69,88 @@ export default function Login() {
         .eq("id", userId)
         .single();
 
-      if (profileError || !profile) {
-        alert("Profil user tidak ditemukan");
+      if (
+        profileError ||
+        !profile
+      ) {
+        toast.error(
+          "Profil user tidak ditemukan",
+          { id }
+        );
         return;
       }
 
-      // Cek status akun
-      if (profile.status !== "aktif") {
-        alert("Akun Anda tidak aktif");
+      if (
+        profile.status !==
+        "aktif"
+      ) {
+        toast.error(
+          "Akun Anda tidak aktif",
+          { id }
+        );
         return;
       }
 
-      // Simpan data penting
-      localStorage.setItem("role", profile.role);
-      localStorage.setItem("nama", profile.nama || "");
-      localStorage.setItem("user_id", profile.id);
+      localStorage.setItem(
+        "role",
+        profile.role
+      );
+      localStorage.setItem(
+        "nama",
+        profile.nama || ""
+      );
+      localStorage.setItem(
+        "user_id",
+        profile.id
+      );
 
-      // ← TAMBAHKAN INI: cek flag harus ganti password
-      const harusGanti = data.user?.user_metadata?.harus_ganti_password;
+      const harusGanti =
+        data.user?.user_metadata
+          ?.harus_ganti_password;
+
       if (harusGanti) {
-        navigate("/update-password");
+        toast.success(
+          "Silakan ubah password",
+          { id }
+        );
+        navigate(
+          "/update-password"
+        );
         return;
       }
 
-      // Redirect sesuai role
-      if (profile.role === "admin") {
+      toast.success(
+        "Login berhasil",
+        { id }
+      );
+
+      if (
+        profile.role ===
+        "admin"
+      ) {
         navigate("/admin");
-      } else if (profile.role === "guru") {
+      } else if (
+        profile.role ===
+        "guru"
+      ) {
         navigate("/guru");
       } else if (
-        profile.role === "ortu" ||
-        profile.role === "orangtua"
+        profile.role ===
+          "ortu" ||
+        profile.role ===
+          "orangtua"
       ) {
         navigate("/ortu");
       } else {
-        alert("Role akun tidak dikenali");
+        toast.error(
+          "Role akun tidak dikenali",
+          { id }
+        );
       }
-
     } catch (err) {
-      alert("Terjadi kesalahan saat login");
+      toast.error(
+        "Terjadi kesalahan saat login"
+      );
     } finally {
       setLoading(false);
     }
@@ -95,103 +158,159 @@ export default function Login() {
 
   return (
     <AuthLayout>
-      <h1 className="text-4xl font-black text-[#4A342B] mb-1">
-        Selamat Datang!
-      </h1>
+      {/* PREMIUM LOGIN UI */}
+      <div className="w-full">
+  
+        {/* TITLE */}
+        <h1 className="text-3xl sm:text-4xl font-black text-[#4A342B] tracking-tight text-center sm:text-left">
+          Selamat Datang!
+        </h1>
 
-      <div className="w-20 h-1.5 bg-[#4A342B] rounded-full mb-6"></div>
+        <div className="w-16 sm:w-20 h-1.5 bg-[#715445] rounded-full mt-3 mb-5 mx-auto sm:mx-0" />
 
-      <p className="text-sm text-gray-600 font-medium italic mb-8 text-left">
-        Silakan masuk untuk melanjutkan ke sistem presensi dan penjadwalan.
-      </p>
+        <p className="text-sm sm:text-[15px] text-gray-500 leading-relaxed font-medium mb-8 text-center sm:text-left">
+          Masuk ke sistem presensi dan penjadwalan
+          sekolah dengan aman dan cepat.
+        </p>
 
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-5"
-      >
-        {/* Email */}
-        <div className="text-left">
-          <label className="block text-[#4A342B] font-bold italic text-sm mb-2">
-            Email
-          </label>
-
-          <div className="flex items-center border border-gray-400 focus-within:border-[#4A342B] rounded-lg px-4 py-3">
-            <User size={18} className="text-gray-600" />
-
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-              placeholder="Masukkan Email Anda"
-              className="w-full ml-3 bg-transparent outline-none text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Password */}
-        <div className="text-left">
-          <label className="block text-[#4A342B] font-bold italic text-sm mb-2">
-            Password
-          </label>
-
-          <div className="flex items-center border border-gray-400 focus-within:border-[#4A342B] rounded-lg px-4 py-3">
-            <Lock size={18} className="text-gray-600" />
-
-            <input
-              type={
-                showPassword
-                  ? "text"
-                  : "password"
-              }
-              required
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-              placeholder="Masukkan Password Anda"
-              className="w-full ml-3 bg-transparent outline-none text-sm"
-            />
-
-            <button
-              type="button"
-              onClick={() =>
-                setShowPassword(!showPassword)
-              }
-              className="text-gray-600 hover:text-gray-800"
-            >
-              {showPassword ? (
-                <Eye size={18} />
-              ) : (
-                <EyeOff size={18} />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Tombol Login */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-[#4A342B] hover:bg-[#36251E] text-white font-bold text-lg py-3 rounded-xl transition-all duration-300"
+        {/* FORM */}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5"
         >
-          {loading
-            ? "Memproses..."
-            : "Masuk"}
-        </button>
+          {/* EMAIL */}
+          <div>
+            <label className="block mb-2 text-sm font-bold text-[#4A342B]">
+              Email
+            </label>
 
-        {/* Forgot Password */}
-        <div className="text-center mt-2">
-          <Link
-            to="/reset-password"
-            className="text-sm text-gray-600 font-bold italic hover:text-[#4A342B]"
+            <div
+              className="
+                h-12 rounded-2xl
+                border border-gray-200
+                bg-white
+                px-4
+                flex items-center gap-3
+                transition-all
+                focus-within:border-[#715445]
+                focus-within:ring-4
+                focus-within:ring-[#715445]/10
+              "
+            >
+              <User
+                size={18}
+                className="text-gray-400 shrink-0"
+              />
+
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) =>
+                  setEmail(
+                    e.target.value
+                  )
+                }
+                placeholder="Masukkan Email Anda"
+                className="w-full bg-transparent outline-none text-sm placeholder:text-gray-400"
+              />
+            </div>
+          </div>
+
+          {/* PASSWORD */}
+          <div>
+            <label className="block mb-2 text-sm font-bold text-[#4A342B]">
+              Password
+            </label>
+
+            <div
+              className="
+                h-12 rounded-2xl
+                border border-gray-200
+                bg-white
+                px-4
+                flex items-center gap-3
+                transition-all
+                focus-within:border-[#715445]
+                focus-within:ring-4
+                focus-within:ring-[#715445]/10
+              "
+            >
+              <Lock
+                size={18}
+                className="text-gray-400 shrink-0"
+              />
+
+              <input
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
+                required
+                value={password}
+                onChange={(e) =>
+                  setPassword(
+                    e.target.value
+                  )
+                }
+                placeholder="Masukkan Password Anda"
+                className="w-full bg-transparent outline-none text-sm placeholder:text-gray-400"
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowPassword(
+                    !showPassword
+                  )
+                }
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-gray-100 active:scale-95 transition-all"
+              >
+                {showPassword ? (
+                  <Eye size={18} />
+                ) : (
+                  <EyeOff size={18} />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* LINK */}
+          <div className="flex justify-end">
+            <Link
+              to="/reset-password"
+              className="text-sm font-semibold text-gray-500 hover:text-[#715445] transition-colors"
+            >
+              Lupa Password?
+            </Link>
+          </div>
+
+          {/* BUTTON */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="
+              w-full h-12
+              rounded-2xl
+              bg-[#715445]
+              hover:bg-[#5c4337]
+              text-white
+              text-sm sm:text-base
+              font-black
+              shadow-lg shadow-[#715445]/20
+              transition-all
+              active:scale-[0.98]
+              disabled:opacity-70
+              disabled:cursor-not-allowed
+            "
           >
-            Lupa Password?
-          </Link>
-        </div>
-      </form>
+            {loading
+              ? "Memproses..."
+              : "Masuk"}
+          </button>
+        </form>
+      </div>
     </AuthLayout>
   );
 }

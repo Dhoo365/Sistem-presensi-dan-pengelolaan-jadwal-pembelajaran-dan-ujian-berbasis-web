@@ -1,120 +1,233 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Lock, Mail, ArrowLeft } from "lucide-react";
+import {
+  Mail,
+  ArrowLeft,
+} from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import AuthLayout from "../../layouts/AuthLayout";
-import bg from "../../assets/foto/background.png";
-import logo from "../../assets/foto/logo.png";
+import toast from "react-hot-toast";
 
 export default function ResetKirim() {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const { error } =
-      await supabase.auth.resetPasswordForEmail(
-        email,
-        {
-          redirectTo:
-            "http://localhost:5173/update-password",
-        }
+      const id =
+        toast.loading(
+          "Mengirim link reset..."
+        );
+
+      const { error } =
+        await supabase.auth.resetPasswordForEmail(
+          email,
+          {
+            redirectTo:
+              "http://localhost:5173/update-password",
+          }
+        );
+
+      if (error) {
+        toast.error(
+          error.message,
+          { id }
+        );
+        return;
+      }
+
+      toast.success(
+        "Link reset berhasil dikirim ke email",
+        { id }
       );
-
-    setLoading(false);
-
-    if (error) {
-      alert(error.message);
-      return;
+    } catch (err) {
+      toast.error(
+        "Terjadi kesalahan saat mengirim link"
+      );
+    } finally {
+      setLoading(false);
     }
-
-    alert("Link reset berhasil dikirim ke email");
   };
 
   return (
     <AuthLayout>
+      {/* RESPONSIVE FIX */}
+      {/* NOTE:
+          Panel kanan harus dihandle di AuthLayout:
+          hidden md:flex / hidden lg:flex
+          File ini dibuat fokus panel kiri only
+      */}
 
-      {/* Icon */}
-      <div className="w-20 h-20 rounded-full border border-gray-400 flex items-center justify-center mb-6 shadow-sm mx-auto">
-        <Lock
-          size={32}
-          strokeWidth={1.5}
-          className="text-[#4A342B]"
-        />
-      </div>
-
-      {/* Title */}
-      <h1 className="text-3xl font-black text-[#4A342B] mb-4 tracking-tight text-center">
-        Reset Password
-      </h1>
-
-      {/* Desc */}
-      <p className="text-[13px] text-gray-600 font-medium italic mb-8 px-2 leading-relaxed text-center">
-        Silakan masukkan Email anda dan kami akan
-        mengirimkan tautan untuk mereset password anda.
-      </p>
-
-      {/* Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="w-full flex flex-col gap-5"
+      <div
+        className="
+          w-full
+          max-w-sm
+          mx-auto
+        "
       >
+        {/* TITLE */}
+        <h1
+          className="
+            text-[26px] sm:text-[30px]
+            leading-tight
+            font-black
+            text-[#4A342B]
+            tracking-tight
+            text-center sm:text-left
+          "
+        >
+          Reset Password
+        </h1>
 
-        {/* Input */}
-        <div className="flex items-center border border-gray-400 focus-within:border-[#4A342B] rounded-lg px-4 py-3 transition-colors duration-300">
+        {/* LINE */}
+        <div
+          className="
+            w-14 h-1.5
+            rounded-full
+            bg-[#715445]
+            mt-3 mb-4
+            mx-auto sm:mx-0
+          "
+        />
 
-          <Mail
-            size={18}
-            className="text-gray-600"
-          />
+        {/* DESC */}
+        <p
+          className="
+            text-[13px] sm:text-sm
+            text-gray-500
+            leading-relaxed
+            font-medium
+            text-center sm:text-left
+            mb-6
+          "
+        >
+          Masukkan email Anda untuk
+          menerima tautan reset
+          password.
+        </p>
 
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) =>
-              setEmail(e.target.value)
-            }
-            placeholder="Masukkan Email Anda"
-            className="bg-transparent w-full ml-3 text-sm text-gray-800 placeholder-gray-500 outline-none italic"
-          />
+        {/* FORM */}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
+          {/* INPUT */}
+          <div>
+            <label
+              className="
+                block mb-2
+                text-[13px]
+                font-bold
+                text-[#4A342B]
+              "
+            >
+              Email
+            </label>
 
+            <div
+              className="
+                h-11 sm:h-12
+                rounded-xl sm:rounded-2xl
+                border border-gray-300
+                bg-white
+                px-4
+                flex items-center gap-3
+                transition-all duration-200
+                focus-within:border-[#715445]
+                focus-within:ring-4
+                focus-within:ring-[#715445]/10
+              "
+            >
+              <Mail
+                size={17}
+                className="text-gray-400 shrink-0"
+              />
+
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) =>
+                  setEmail(
+                    e.target.value
+                  )
+                }
+                placeholder="Masukkan Email"
+                className="
+                  w-full
+                  bg-transparent
+                  outline-none
+                  text-sm
+                  placeholder:text-gray-400
+                "
+              />
+            </div>
+          </div>
+
+          {/* BUTTON */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="
+              w-full h-11 sm:h-12
+              rounded-xl sm:rounded-2xl
+              bg-[#715445]
+              hover:bg-[#5c4337]
+              text-white
+              text-sm font-black
+              shadow-md shadow-[#715445]/20
+              transition-all duration-200
+              active:scale-[0.98]
+              disabled:opacity-70
+              disabled:cursor-not-allowed
+            "
+          >
+            {loading
+              ? "Mengirim..."
+              : "Kirim Link"}
+          </button>
+        </form>
+
+        {/* DIVIDER */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="h-px flex-1 bg-gray-200" />
+
+          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+            Atau
+          </span>
+
+          <div className="h-px flex-1 bg-gray-200" />
         </div>
 
-        {/* Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-[#4A342B] hover:bg-[#36251E] active:scale-[0.98] text-white font-bold text-sm py-3 rounded-xl transition-all duration-300 shadow-md mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
+        {/* BACK */}
+        <Link
+          to="/login"
+          className="
+            h-10 sm:h-11
+            w-full
+            rounded-xl sm:rounded-2xl
+            border border-gray-300
+            bg-white/80
+            text-sm font-bold
+            text-gray-600
+            hover:text-[#715445]
+            hover:border-[#715445]/20
+            transition-all duration-200
+            active:scale-[0.98]
+            flex items-center justify-center gap-2
+          "
         >
-          {loading ? "Mengirim..." : "Kirim"}
-        </button>
-
-      </form>
-
-      {/* Divider */}
-      <div className="w-full flex items-center gap-4 my-6">
-        <div className="h-[1px] flex-1 bg-gray-400"></div>
-
-        <span className="text-xs text-gray-600 font-medium italic">
-          Atau
-        </span>
-
-        <div className="h-[1px] flex-1 bg-gray-400"></div>
+          <ArrowLeft size={15} />
+          Kembali ke Login
+        </Link>
       </div>
-
-      {/* Back */}
-      <Link
-        to="/login"
-        className="flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-[#4A342B] font-medium italic transition-all duration-300 hover:-translate-x-1"
-      >
-        <ArrowLeft size={16} />
-        kembali ke halaman login
-      </Link>
-
     </AuthLayout>
   );
 }

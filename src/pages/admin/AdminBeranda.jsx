@@ -14,50 +14,105 @@ import {
   CalendarCheck,
   CalendarRange,
   ChevronRight,
-  Clock
+  Clock,
+  Sparkles,
+  RefreshCcw
 } from "lucide-react";
 
+import toast from "react-hot-toast";
 import api from "../../lib/axios";
 
+// PREMIUM UI UPGRADE
+const glassCard =
+  "bg-white/90 backdrop-blur-sm border border-white/70";
 
-// =======================================
-// STAT CARD
-// =======================================
+const hoverLift =
+  "transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg";
 
+const softBtn =
+  `
+  min-h-[44px]
+  px-4 py-2.5
+  rounded-2xl
+  text-xs sm:text-sm
+  font-semibold
+  border border-black/5
+  bg-white
+  hover:bg-zinc-50
+  active:scale-[0.98]
+  shadow-sm
+  transition-all duration-200
+  flex items-center justify-center gap-2
+`;
+
+const primaryBtn =
+  `
+  min-h-[44px]
+  px-4 py-2.5
+  rounded-2xl
+  text-xs sm:text-sm
+  font-semibold
+  bg-[#715445]
+  text-white
+  hover:bg-[#5e4336]
+  active:scale-[0.98]
+  shadow-lg shadow-[#715445]/15
+  transition-all duration-200
+  flex items-center justify-center gap-2
+`;
+
+// PREMIUM UI UPGRADE
 const StatCard = ({
   count,
   label,
   subLabel,
   icon: Icon,
-  colorClass,
-  iconBg
+  iconBg,
+  tint
 }) => (
-  <div className={`${colorClass} rounded-2xl p-6 flex items-center gap-5 border shadow-sm transition-transform hover:scale-[1.02]`}>
-    <div className={`${iconBg} p-4 rounded-xl text-white shadow-md`}>
-      <Icon size={28} />
-    </div>
+  <div
+    className={`
+      ${glassCard}
+      ${hoverLift}
+      rounded-3xl p-4 sm:p-5 lg:p-6
+      min-h-[110px]
+      relative overflow-hidden
+    `}
+  >
+    <div
+      className={`absolute inset-0 opacity-70 ${tint}`}
+    />
 
-    <div>
-      <h3 className="text-3xl font-bold text-gray-800 leading-none">
-        {count}
-      </h3>
+    <div className="relative z-10 flex items-center gap-4">
+      <div
+        className={`
+          ${iconBg}
+          w-12 h-12 sm:w-14 sm:h-14 rounded-2xl
+          text-white flex items-center justify-center
+          shadow-md shrink-0
+        `}
+      >
+        <Icon size={22} />
+      </div>
 
-      <p className="font-bold text-gray-700 text-sm mt-1">
-        {label}
-      </p>
+      <div className="min-w-0">
+        <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+          {count}
+        </h3>
 
-      <p className="text-[10px] text-gray-500 uppercase tracking-wider">
-        {subLabel}
-      </p>
+        <p className="text-sm sm:text-[15px] font-semibold text-gray-800 truncate">
+          {label}
+        </p>
+
+        <p className="text-[10px] uppercase tracking-[0.18em] text-gray-500 truncate">
+          {subLabel}
+        </p>
+      </div>
     </div>
   </div>
 );
 
-
-// =======================================
-// CARD JADWAL
-// =======================================
-
+// TABLE TO CARD RESPONSIVE
 const ScheduleCard = ({
   type,
   grade,
@@ -72,89 +127,92 @@ const ScheduleCard = ({
     "ujian";
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-gray-200 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-
+    <div
+      className={`
+        ${glassCard}
+        ${hoverLift}
+        rounded-3xl p-4 sm:p-5
+        relative overflow-hidden h-full
+      `}
+    >
       <div
-        className={`absolute left-0 top-0 bottom-0 w-2 ${
+        className={`absolute left-0 top-0 bottom-0 w-1.5 ${
           isExam
             ? "bg-[#E16766]"
-            : "bg-[#60B873]"
+            : "bg-[#715445]"
         }`}
       />
 
-      <div className="flex items-center gap-3 mb-4 pl-2">
+      <div className="pl-2">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span
+            className={`text-[10px] font-black px-2.5 py-1 rounded-full border uppercase ${
+              isExam
+                ? "bg-[#FCEAE9] text-[#E16766] border-[#E16766]/20"
+                : "bg-[#F7F2EF] text-[#715445] border-[#715445]/20"
+            }`}
+          >
+            {type}
+          </span>
 
-        <span
-          className={`text-[10px] font-bold px-2 py-1 rounded border uppercase ${
-            isExam
-              ? "bg-[#FCEAE9] text-[#E16766] border-[#E16766]"
-              : "bg-[#E4F5E8] text-[#60B873] border-[#60B873]"
-          }`}
-        >
-          {type}
-        </span>
-
-        <span className="font-bold text-sm text-gray-800">
-          {grade}
-        </span>
-
-      </div>
-
-      <div className="space-y-3 text-xs text-gray-600 pl-2">
-
-        <div className="flex items-center gap-3 font-medium text-gray-800">
-          <CalendarDays
-            size={14}
-            className="text-gray-400"
-          />
-          <span>
-            {date
-              ? `${day}, ${date}`
-              : day}
+          <span className="text-sm font-semibold text-gray-900 break-words">
+            {grade}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <BookOpen
-            size={14}
-            className="text-gray-400"
+        <div className="space-y-3 text-xs sm:text-sm text-gray-600">
+          <RowIcon
+            icon={CalendarDays}
+            text={
+              date
+                ? `${day}, ${date}`
+                : day
+            }
           />
-          <span>{subject}</span>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <User
-            size={14}
-            className="text-gray-400"
+          <RowIcon
+            icon={BookOpen}
+            text={subject}
           />
-          <span>{teacher}</span>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <Clock
-            size={14}
-            className="text-gray-400"
+          <RowIcon
+            icon={User}
+            text={teacher}
           />
-          <span>{time}</span>
-        </div>
 
+          <RowIcon
+            icon={Clock}
+            text={time}
+          />
+        </div>
       </div>
     </div>
   );
 };
 
+const RowIcon = ({
+  icon: Icon,
+  text
+}) => (
+  <div className="flex items-start gap-3">
+    <Icon
+      size={14}
+      className="mt-0.5 shrink-0 text-[#715445]"
+    />
+    <span className="break-words">
+      {text}
+    </span>
+  </div>
+);
 
-// =======================================
-// MAIN
-// =======================================
-
+// SAFE RESPONSIVE REFACTOR
 const AdminBeranda = () => {
   const [stats, setStats] =
     useState({
       murid: "-",
       guru: "-",
       mapel: "-",
-      kelas: "-",
+      kelas: "-"
     });
 
   const [jadwalHariIni, setJadwalHariIni] =
@@ -169,22 +227,14 @@ const AdminBeranda = () => {
   const [loadingJadwal, setLoadingJadwal] =
     useState(true);
 
+  const [refreshing, setRefreshing] =
+    useState(false);
+
   const [showAllHari, setShowAllHari] =
     useState(false);
 
   const [showAllMinggu, setShowAllMinggu] =
     useState(false);
-
-
-  const hariList = [
-    "Minggu",
-    "Senin",
-    "Selasa",
-    "Rabu",
-    "Kamis",
-    "Jumat",
-    "Sabtu",
-  ];
 
   const tglFormatted =
     new Date().toLocaleDateString(
@@ -193,27 +243,16 @@ const AdminBeranda = () => {
         weekday: "long",
         day: "numeric",
         month: "long",
-        year: "numeric",
+        year: "numeric"
       }
     ).toUpperCase();
 
-
-  // =======================================
-  // RANGE MINGGU
-  // =======================================
-
   const rangeMinggu =
     useMemo(() => {
-      const now =
-        new Date();
-
-      const day =
-        now.getDay();
-
+      const now = new Date();
+      const day = now.getDay();
       const diff =
-        day === 0
-          ? -6
-          : 1 - day;
+        day === 0 ? -6 : 1 - day;
 
       const monday =
         new Date(now);
@@ -229,109 +268,101 @@ const AdminBeranda = () => {
         monday.getDate() + 6
       );
 
-      const format = (
-        d
-      ) =>
+      const format = (d) =>
         d.toLocaleDateString(
           "id-ID",
           {
             day: "numeric",
             month: "long",
-            year: "numeric",
+            year: "numeric"
           }
         );
 
       return `${format(
         monday
-      )} - ${format(
-        sunday
-      )}`;
+      )} - ${format(sunday)}`;
     }, []);
 
+  const fetchData =
+    async (silent = false) => {
+      try {
+        if (!silent) {
+          setLoadingStats(true);
+          setLoadingJadwal(true);
+        }
 
-  // =======================================
-  // FETCH
-  // =======================================
+        const [
+          statsRes,
+          hariRes,
+          mingguRes
+        ] =
+          await Promise.all([
+            api.get(
+              "/admin/dashboard"
+            ),
+            api.get(
+              "/admin/jadwal/hari-ini"
+            ),
+            api.get(
+              "/admin/jadwal/minggu-ini"
+            )
+          ]);
+
+        setStats(
+          statsRes.data || {}
+        );
+
+        setJadwalHariIni(
+          hariRes.data || []
+        );
+
+        setJadwalMinggu(
+          mingguRes.data || []
+        );
+      } catch (err) {
+        toast.error(
+          "Gagal memuat dashboard"
+        );
+      } finally {
+        setLoadingStats(false);
+        setLoadingJadwal(false);
+      }
+    };
 
   useEffect(() => {
-    const fetchData =
-      async () => {
-        try {
-          setLoadingStats(
-            true
-          );
-
-          setLoadingJadwal(
-            true
-          );
-
-          const [
-            statsRes,
-            hariRes,
-            mingguRes,
-          ] =
-            await Promise.all([
-              api.get(
-                "/admin/dashboard"
-              ),
-              api.get(
-                "/admin/jadwal/hari-ini"
-              ),
-              api.get(
-                "/admin/jadwal/minggu-ini"
-              ),
-            ]);
-
-          setStats(
-            statsRes.data ||
-              {}
-          );
-
-          setJadwalHariIni(
-            hariRes.data ||
-              []
-          );
-
-          setJadwalMinggu(
-            mingguRes.data ||
-              []
-          );
-
-        } catch (err) {
-          console.log(
-            err
-          );
-        } finally {
-          setLoadingStats(
-            false
-          );
-
-          setLoadingJadwal(
-            false
-          );
-        }
-      };
-
     fetchData();
   }, []);
 
+  // TOAST SYSTEM READY
+  const handleRefresh =
+    async () => {
+      try {
+        setRefreshing(true);
 
-  // =======================================
-  // DISPLAY HARI
-  // =======================================
+        const id =
+          toast.loading(
+            "Memperbarui data..."
+          );
+
+        await fetchData(true);
+
+        toast.success(
+          "Dashboard diperbarui",
+          { id }
+        );
+      } catch {
+        toast.error(
+          "Gagal memperbarui data"
+        );
+      } finally {
+        setRefreshing(false);
+      }
+    };
 
   const displayHari =
     showAllHari
       ? jadwalHariIni
-      : jadwalHariIni.slice(
-          0,
-          4
-        );
-
-
-  // =======================================
-  // GROUP PER HARI
-  // =======================================
+      : jadwalHariIni.slice(0, 4);
 
   const urutHari = [
     "Senin",
@@ -340,29 +371,24 @@ const AdminBeranda = () => {
     "Kamis",
     "Jumat",
     "Sabtu",
-    "Minggu",
+    "Minggu"
   ];
 
   const groupHari =
-    urutHari.map(
-      (hari) => ({
-        hari,
-        data:
-          jadwalMinggu.filter(
-            (j) =>
-              j.hari ===
-              hari
-          ),
-      })
-    );
-
+    urutHari.map((hari) => ({
+      hari,
+      data:
+        jadwalMinggu.filter(
+          (j) =>
+            j.hari === hari
+        )
+    }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-6 lg:space-y-7 animate-[fadeIn_.35s_ease]">
 
-      {/* STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
+      {/* PREMIUM UI UPGRADE */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
           count={
             loadingStats
@@ -372,8 +398,8 @@ const AdminBeranda = () => {
           label="Murid Aktif"
           subLabel="Total Murid"
           icon={Users}
-          colorClass="bg-[#FDEEDC] border-orange-200"
           iconBg="bg-[#F2A65A]"
+          tint="bg-gradient-to-br from-orange-50 to-transparent"
         />
 
         <StatCard
@@ -383,10 +409,12 @@ const AdminBeranda = () => {
               : stats.guru
           }
           label="Guru Aktif"
-          subLabel="Total Tenaga Pengajar"
-          icon={GraduationCap}
-          colorClass="bg-[#C8E8D2] border-green-300"
-          iconBg="bg-[#5CB874]"
+          subLabel="Total Pengajar"
+          icon={
+            GraduationCap
+          }
+          iconBg="bg-[#58B26B]"
+          tint="bg-gradient-to-br from-emerald-50 to-transparent"
         />
 
         <StatCard
@@ -396,10 +424,10 @@ const AdminBeranda = () => {
               : stats.mapel
           }
           label="Mapel Aktif"
-          subLabel="Total Mata Pelajaran"
+          subLabel="Total Pelajaran"
           icon={BookOpen}
-          colorClass="bg-[#BBD0E3] border-blue-300"
-          iconBg="bg-[#518CB8]"
+          iconBg="bg-[#5B88C7]"
+          tint="bg-gradient-to-br from-blue-50 to-transparent"
         />
 
         <StatCard
@@ -409,32 +437,34 @@ const AdminBeranda = () => {
               : stats.kelas
           }
           label="Kelas Aktif"
-          subLabel="Total Ruang Kelas"
+          subLabel="Total Ruangan"
           icon={School}
-          colorClass="bg-[#DABEFF] border-purple-300"
-          iconBg="bg-[#A366FF]"
+          iconBg="bg-[#9B6BFF]"
+          tint="bg-gradient-to-br from-purple-50 to-transparent"
         />
-
       </div>
 
+      {/* MOBILE UX FIX */}
+      <section className="rounded-3xl border border-black/5 bg-gradient-to-b from-white to-zinc-50 shadow-sm p-4 sm:p-5 lg:p-6">
+        <div className="flex flex-col xl:flex-row xl:items-center gap-4 mb-5">
+          <div className="min-w-0 flex-1 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#715445]/10 flex items-center justify-center shrink-0">
+              <CalendarCheck
+                size={18}
+                className="text-[#715445]"
+              />
+            </div>
 
-      {/* JADWAL HARI INI */}
-      <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                Jadwal Hari Ini
+              </h3>
 
-        <div className="flex items-center gap-3 mb-6">
-
-          <CalendarCheck
-            size={24}
-            className="text-gray-700"
-          />
-
-          <h3 className="font-bold text-xl text-gray-800">
-            Jadwal Hari Ini
-          </h3>
-
-          <span className="ml-2 bg-white/50 border border-gray-400 text-gray-700 text-[10px] font-bold px-3 py-1 rounded-full">
-            {tglFormatted}
-          </span>
+              <p className="text-xs text-gray-500 font-medium truncate">
+                {tglFormatted}
+              </p>
+            </div>
+          </div>
 
           {jadwalHariIni.length >
             4 && (
@@ -444,94 +474,75 @@ const AdminBeranda = () => {
                   !showAllHari
                 )
               }
-              className="ml-auto flex items-center gap-2 bg-white/50 border border-gray-400 hover:bg-white text-gray-700 text-xs font-bold px-4 py-2 rounded-full transition-all"
+              className={
+                softBtn
+              }
             >
               {showAllHari
                 ? "Ringkas"
-                : "Lihat Semua Jadwal"}
-
+                : "Lihat Semua"}
               <ChevronRight
                 size={14}
               />
             </button>
           )}
-
         </div>
 
         {loadingJadwal ? (
-          <div className="bg-white rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner">
-            <p className="text-gray-400 font-bold text-lg">
-              Memuat jadwal...
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {[...Array(4)].map(
+              (_, i) => (
+                <div
+                  key={i}
+                  className="h-40 rounded-3xl bg-gray-100 animate-pulse"
+                />
+              )
+            )}
           </div>
-
         ) : displayHari.length ===
           0 ? (
-
-          <div className="bg-white rounded-2xl py-20 flex flex-col items-center justify-center border border-gray-200 shadow-inner">
-            <p className="text-gray-400 font-bold text-lg">
-              Tidak Ada Jadwal Untuk Hari Ini
-            </p>
+          <div className="rounded-3xl bg-zinc-50 border border-dashed border-gray-200 py-14 text-center text-gray-400 font-semibold">
+            Tidak Ada Jadwal Untuk Hari Ini
           </div>
-
         ) : (
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             {displayHari.map(
               (j) => (
                 <ScheduleCard
                   key={j.id}
-                  type={
-                    j.tipe
-                  }
-                  grade={
-                    j.kelas
-                  }
-                  day={
-                    j.hari
-                  }
-                  subject={
-                    j.mapel
-                  }
-                  teacher={
-                    j.guru
-                  }
-                  time={
-                    j.time
-                  }
+                  type={j.tipe}
+                  grade={j.kelas}
+                  day={j.hari}
+                  subject={j.mapel}
+                  teacher={j.guru}
+                  time={j.time}
                 />
               )
             )}
-
           </div>
         )}
-
       </section>
 
-
-      {/* JADWAL MINGGU INI */}
-      <section className="bg-[#DFDFDF] rounded-2xl p-6 border border-gray-300 shadow-sm">
-
-        <div className="flex items-center justify-between mb-6">
-
-          <div className="flex items-center gap-3">
-
-            <CalendarRange
-              size={24}
-              className="text-gray-700"
-            />
+      {/* SAFE RESPONSIVE REFACTOR */}
+      <section className="rounded-3xl border border-black/5 bg-gradient-to-b from-white to-zinc-50 shadow-sm p-4 sm:p-5 lg:p-6">
+        <div className="flex flex-col xl:flex-row xl:items-center gap-4 mb-6">
+          <div className="flex gap-3 flex-1">
+            <div className="w-10 h-10 rounded-2xl bg-[#715445]/10 flex items-center justify-center shrink-0">
+              <CalendarRange
+                size={18}
+                className="text-[#715445]"
+              />
+            </div>
 
             <div>
-              <h3 className="font-bold text-xl text-gray-800">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">
                 Jadwal Minggu Ini
               </h3>
 
-              <p className="text-xs text-gray-500 font-semibold">
+              <p className="text-xs text-gray-500 font-medium">
                 {rangeMinggu}
               </p>
             </div>
-
           </div>
 
           <button
@@ -540,39 +551,41 @@ const AdminBeranda = () => {
                 !showAllMinggu
               )
             }
-            className="flex items-center gap-2 bg-white/50 border border-gray-400 hover:bg-white text-gray-700 text-xs font-bold px-4 py-2 rounded-full transition-all"
+            className={
+              softBtn
+            }
           >
             {showAllMinggu
               ? "Ringkas"
-              : "Lihat Semua Jadwal"}
-
+              : "Lihat Semua"}
             <ChevronRight
               size={14}
             />
           </button>
-
         </div>
 
         {loadingJadwal ? (
-          <p className="text-gray-400 text-sm font-medium">
-            Memuat jadwal...
-          </p>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {[...Array(4)].map(
+              (_, i) => (
+                <div
+                  key={i}
+                  className="h-40 rounded-3xl bg-gray-100 animate-pulse"
+                />
+              )
+            )}
+          </div>
         ) : jadwalMinggu.length ===
           0 ? (
-
-          <p className="text-gray-400 font-bold text-lg">
+          <div className="rounded-3xl bg-zinc-50 border border-dashed border-gray-200 py-14 text-center text-gray-400 font-semibold">
             Belum Ada Jadwal
-          </p>
-
+          </div>
         ) : (
-
-          <div className="space-y-6">
-
+          <div className="space-y-7">
             {groupHari.map(
               ({
                 hari,
-                data,
+                data
               }) => {
                 if (
                   data.length ===
@@ -590,16 +603,13 @@ const AdminBeranda = () => {
 
                 return (
                   <div
-                    key={
-                      hari
-                    }
+                    key={hari}
                   >
-                    <h4 className="font-bold text-gray-700 mb-3">
+                    <h4 className="text-sm font-bold uppercase tracking-[0.18em] text-[#715445] mb-3">
                       {hari}
                     </h4>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                       {tampil.map(
                         (
                           j
@@ -632,18 +642,14 @@ const AdminBeranda = () => {
                           />
                         )
                       )}
-
                     </div>
                   </div>
                 );
               }
             )}
-
           </div>
         )}
-
       </section>
-
     </div>
   );
 };
