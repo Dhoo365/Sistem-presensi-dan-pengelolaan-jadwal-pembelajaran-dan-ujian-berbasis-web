@@ -1,13 +1,13 @@
 import { FaDownload } from "react-icons/fa";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import toast from "react-hot-toast";
 import api from "../../lib/axios";
 import {
   todayManado,
   monthManado,
-  dateTimeManado
 } from "../../utils/timezone";
 
 export default function LaporanGuru() {
@@ -46,89 +46,49 @@ export default function LaporanGuru() {
   const [search, setSearch] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [loadingMaster, setLoadingMaster] =
-    useState(true);
+  const [loadingMaster, setLoadingMaster] = useState(true);
 
-  /* ===============================
-     INITIAL
-  =============================== */
   useEffect(() => {
     initPage();
   }, []);
 
+  useEffect(() => {
+    if (!tahunId) return;
+    loadSemester();
+    loadFilter();
+  }, [tahunId, tab]);
+
+  useEffect(() => {
+    if (tahunId && pilih && timeline) {
+      loadRows();
+    }
+  }, [tahunId, pilih, timeline, tab]);
+
   const initPage = async () => {
     try {
       setLoadingMaster(true);
-
-      await Promise.all([
-        loadTahun(),
-        cekWaliKelas(),
-      ]);
+      await Promise.all([loadTahun(), cekWaliKelas()]);
     } finally {
       setLoadingMaster(false);
     }
   };
 
-  /* ===============================
-     SAAT TAHUN / TAB BERUBAH
-  =============================== */
-  useEffect(() => {
-    if (!tahunId) return;
-
-    loadSemester();
-    loadFilter();
-  }, [tahunId, tab]);
-
-  /* ===============================
-     SAAT FILTER SIAP
-  =============================== */
-  useEffect(() => {
-    if (
-      tahunId &&
-      pilih &&
-      timeline
-    ) {
-      loadRows();
-    }
-  }, [tahunId, pilih, timeline, tab]);
-
-  /* ===============================
-     API
-  =============================== */
   const cekWaliKelas = async () => {
     try {
-      const res = await api.get(
-        "/guru/laporan/wali/filter"
-      );
-
-      setIsWaliKelas(
-        (res.data || []).length > 0
-      );
-    } catch (err) {
-      console.log(err);
-    }
+      const res = await api.get("/guru/laporan/wali/filter");
+      setIsWaliKelas((res.data || []).length > 0);
+    } catch {}
   };
 
   const loadTahun = async () => {
     try {
-      const res = await api.get(
-        "/guru/tahun/list"
-      );
-
+      const res = await api.get("/guru/tahun/list");
       const list = res.data || [];
-
       setTahunList(list);
 
-      const aktif =
-        list.find((x) => x.aktif) ||
-        list[0];
-
-      if (aktif) {
-        setTahunId(aktif.id);
-      }
-    } catch (err) {
-      console.log(err);
-    }
+      const aktif = list.find((x) => x.aktif) || list[0];
+      if (aktif) setTahunId(aktif.id);
+    } catch {}
   };
 
   const loadSemester = async () => {
@@ -138,23 +98,16 @@ export default function LaporanGuru() {
       );
 
       const list = res.data || [];
-
       setSemesterList(list);
 
-      if (
-        mode === "semester" &&
-        list.length
-      ) {
+      if (mode === "semester" && list.length) {
         setTimeline(
-          list.find((x) => x.aktif)
-            ?.id ||
+          list.find((x) => x.aktif)?.id ||
             list[0]?.id ||
             ""
         );
       }
-    } catch (err) {
-      console.log(err);
-    }
+    } catch {}
   };
 
   const loadFilter = async () => {
@@ -169,7 +122,6 @@ export default function LaporanGuru() {
           : "/guru/laporan/wali/filter";
 
       const res = await api.get(url);
-
       const list = res.data || [];
 
       setOpsi(list);
@@ -177,9 +129,7 @@ export default function LaporanGuru() {
       if (list.length) {
         setPilih(list[0].id);
       }
-    } catch (err) {
-      console.log(err);
-    }
+    } catch {}
   };
 
   const loadRows = async () => {
@@ -192,19 +142,15 @@ export default function LaporanGuru() {
           : `/guru/laporan/wali?kelas=${pilih}&mode=${mode}&nilai=${timeline}&tahun_id=${tahunId}`;
 
       const res = await api.get(url);
-
       setRows(res.data || []);
-    } catch (err) {
-      console.log(err);
+    } catch {
       setRows([]);
+      toast.error("Gagal memuat laporan");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ===============================
-     ACTION
-  =============================== */
   const handleTab = (val) => {
     setTab(val);
     setMode("bulan");
@@ -219,39 +165,29 @@ export default function LaporanGuru() {
       setTimeline(todayManado());
     } else if (val === "bulan") {
       setTimeline(bulanNow);
-    } else if (val === "semester") {
-      const aktif =
-        semesterList.find(
-          (x) => x.aktif
-        )?.id ||
-        semesterList[0]?.id ||
-        "";
-
-      setTimeline(aktif);
+    } else {
+      setTimeline(
+        semesterList.find((x) => x.aktif)?.id ||
+          semesterList[0]?.id ||
+          ""
+      );
     }
   };
 
-  /* ===============================
-     FILTER TABLE
-  =============================== */
   const filtered = useMemo(() => {
     return rows.filter((x) =>
       x.nama
-        .toLowerCase()
-        .includes(
-          search.toLowerCase()
-        )
+        ?.toLowerCase()
+        .includes(search.toLowerCase())
     );
   }, [rows, search]);
 
-  /* ===============================
-     PDF
-  =============================== */
 const handlePDF = async () => {
   if (!filtered.length) {
-    alert("Tidak ada data.");
+    toast.error("Tidak ada data untuk diunduh");
     return;
   }
+
 
   const LOGO_URL =
     "https://ccehpokvtkamhkhhhsnt.supabase.co/storage/v1/object/public/public-assets/logo.png";
@@ -259,12 +195,13 @@ const handlePDF = async () => {
   const doc = new jsPDF("p", "mm", "a4");
   const pageWidth = doc.internal.pageSize.getWidth();
   const center = pageWidth / 2;
+  toast.success("Mengunduh laporan...");
 
   const loadImageBase64 = async (url) => {
     try {
       const res = await fetch(url);
       const blob = await res.blob();
-
+      
       return await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () =>
@@ -276,8 +213,16 @@ const handlePDF = async () => {
     }
   };
 
-  const formatTanggal =
-    dateTimeManado();
+  const formatTanggal = new Date().toLocaleString(
+    "id-ID",
+    {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  );
 
   const periodeText = () => {
     if (mode === "hari") return timeline;
@@ -768,313 +713,487 @@ const handlePDF = async () => {
       ? "Laporan-Pengajar.pdf"
       : "Laporan-Wali-Kelas.pdf"
   );
+  toast.success("Laporan berhasil diunduh");
 };
 
-  return (
-    <div className="p-6 bg-[#F8F6F3] min-h-screen space-y-5">
-      {/* TAB */}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() =>
-            handleTab(
-              "pengajar"
-            )
-          }
-          className={`px-5 py-2.5 rounded-xl text-sm font-semibold ${
-            tab === "pengajar"
-              ? "bg-[#4A342B] text-white"
-              : "bg-white border border-gray-300"
-          }`}
-        >
-          Laporan Pengajar
-        </button>
+  const totalHadir = filtered.reduce(
+    (a, b) => a + Number(b.hadir || 0),
+    0
+  );
 
-        {isWaliKelas && (
+  const totalSakit = filtered.reduce(
+    (a, b) => a + Number(b.sakit || 0),
+    0
+  );
+
+  const totalIzin = filtered.reduce(
+    (a, b) => a + Number(b.izin || 0),
+    0
+  );
+
+  const totalAlpha = filtered.reduce(
+    (a, b) => a + Number(b.alpha || 0),
+    0
+  );
+
+  return (
+    <section className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+      {/* TAB */}
+      <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button
-            onClick={() =>
-              handleTab(
-                "wali"
-              )
-            }
-            className={`px-5 py-2.5 rounded-xl text-sm font-semibold ${
-              tab === "wali"
-                ? "bg-[#4A342B] text-white"
-                : "bg-white border border-gray-300"
+            onClick={() => handleTab("pengajar")}
+            className={`min-h-[44px] rounded-2xl font-bold transition-all ${
+              tab === "pengajar"
+                ? "bg-[#715445] text-white"
+                : "bg-gray-100 text-gray-700"
             }`}
           >
-            Laporan Wali Kelas
+            Laporan Pengajar
           </button>
-        )}
+
+          {isWaliKelas && (
+            <button
+              onClick={() => handleTab("wali")}
+              className={`min-h-[44px] rounded-2xl font-bold transition-all ${
+                tab === "wali"
+                  ? "bg-[#715445] text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              Wali Kelas
+            </button>
+          )}
+        </div>
       </div>
 
       {/* FILTER */}
-      <div className="bg-white rounded-2xl border border-gray-300 p-5 shadow-sm flex flex-wrap gap-3 justify-between">
-        <div className="flex flex-wrap gap-3">
-          {/* SEARCH */}
-          <div className="relative">
-            <input
-              value={search}
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
-              placeholder="Cari siswa..."
-              className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 w-64"
-            />
-
-            <Search
-              size={18}
-              className="absolute left-3 top-3 text-gray-400"
+      <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-4 sm:p-5 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3 items-center">
+          <div className="xl:col-span-4">
+            <InputSearch
+              search={search}
+              setSearch={setSearch}
             />
           </div>
 
-          {/* TAHUN */}
-          <select
-            value={tahunId}
-            onChange={(e) =>
-              setTahunId(
-                e.target.value
-              )
-            }
-            className="px-4 py-2.5 rounded-xl border border-gray-300"
-          >
-            {tahunList.map(
-              (x) => (
+          <div className="xl:col-span-2">
+            <SelectBox
+              value={tahunId}
+              onChange={(e) =>
+                setTahunId(e.target.value)
+              }
+            >
+              {tahunList.map((x) => (
                 <option
                   key={x.id}
                   value={x.id}
                 >
                   {x.id}
                 </option>
-              )
-            )}
-          </select>
+              ))}
+            </SelectBox>
+          </div>
 
-          {/* OPSI */}
-          <select
-            value={pilih}
-            onChange={(e) =>
-              setPilih(
-                e.target.value
-              )
-            }
-            className="px-4 py-2.5 rounded-xl border border-gray-300 min-w-[260px]"
-          >
-            {opsi.map((x) => (
-              <option
-                key={x.id}
-                value={x.id}
-              >
-                {x.label ||
-                  x.nama}
+          <div className="xl:col-span-3">
+            <SelectBox
+              value={pilih}
+              onChange={(e) =>
+                setPilih(e.target.value)
+              }
+            >
+              {opsi.map((x) => (
+                <option
+                  key={x.id}
+                  value={x.id}
+                >
+                  {x.label || x.nama}
+                </option>
+              ))}
+            </SelectBox>
+          </div>
+
+          <div className="xl:col-span-3">
+            <SelectBox
+              value={mode}
+              onChange={(e) =>
+                handleMode(e.target.value)
+              }
+            >
+              <option value="hari">
+                Per Hari
               </option>
-            ))}
-          </select>
-
-          {/* MODE */}
-          <select
-            value={mode}
-            onChange={(e) =>
-              handleMode(
-                e.target.value
-              )
-            }
-            className="px-4 py-2.5 rounded-xl border border-gray-300"
-          >
-            <option value="hari">
-              Per Hari
-            </option>
-            <option value="bulan">
-              Per Bulan
-            </option>
-            <option value="semester">
-              Per Semester
-            </option>
-          </select>
-
-          {/* TIMELINE */}
-          {mode === "hari" && (
-            <input
-              type="date"
-              value={timeline}
-              onChange={(e) =>
-                setTimeline(
-                  e.target.value
-                )
-              }
-              className="px-4 py-2.5 rounded-xl border border-gray-300"
-            />
-          )}
-
-          {mode === "bulan" && (
-            <select
-              value={timeline}
-              onChange={(e) =>
-                setTimeline(
-                  e.target.value
-                )
-              }
-              className="px-4 py-2.5 rounded-xl border border-gray-300"
-            >
-              {daftarBulan.map(
-                (x) => (
-                  <option
-                    key={x.id}
-                    value={x.id}
-                  >
-                    {x.nama}
-                  </option>
-                )
-              )}
-            </select>
-          )}
-
-          {mode === "semester" && (
-            <select
-              value={timeline}
-              onChange={(e) => {
-                const val =
-                  e.target.value;
-
-                setTimeline(val);
-
-                const selected =
-                  semesterList.find(
-                    (x) =>
-                      x.id === val
-                  );
-
-                if (
-                  selected?.tahun_id &&
-                  selected.tahun_id !==
-                    tahunId
-                ) {
-                  setTahunId(
-                    selected.tahun_id
-                  );
-                }
-              }}
-              className="px-4 py-2.5 rounded-xl border border-gray-300 min-w-[260px]"
-            >
-              {semesterList.map(
-                (x) => (
-                  <option
-                    key={x.id}
-                    value={x.id}
-                  >
-                    {x.tahun_id} -{" "}
-                    {x.nama}
-                  </option>
-                )
-              )}
-            </select>
-          )}
+              <option value="bulan">
+                Per Bulan
+              </option>
+              <option value="semester">
+                Per Semester
+              </option>
+            </SelectBox>
+          </div>
         </div>
 
-        {/* PDF */}
-        <button
-          onClick={handlePDF}
-          className="flex items-center gap-2 bg-[#4A342B] text-white px-5 py-2.5 rounded-xl hover:opacity-90 transition"
-        >
-          <FaDownload />
-          Unduh PDF
-        </button>
+        {/* BARIS KEDUA DESKTOP PDF + TIMELINE */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
+          <div className="lg:col-span-3">
+            <button
+              onClick={handlePDF}
+              className="w-full h-11 rounded-2xl bg-[#715445] text-white font-bold flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm"
+            >
+              <FaDownload />
+              Unduh PDF
+            </button>
+          </div>
+
+          <div className="lg:col-span-9">
+            {mode === "hari" && (
+              <input
+                type="date"
+                value={timeline}
+                onChange={(e) =>
+                  setTimeline(
+                    e.target.value
+                  )
+                }
+                className="h-11 rounded-2xl border border-gray-200 px-4 w-full"
+              />
+            )}
+
+            {mode === "bulan" && (
+              <SelectBox
+                value={timeline}
+                onChange={(e) =>
+                  setTimeline(
+                    e.target.value
+                  )
+                }
+              >
+                {daftarBulan.map((x) => (
+                  <option
+                    key={x.id}
+                    value={x.id}
+                  >
+                    {x.nama}
+                  </option>
+                ))}
+              </SelectBox>
+            )}
+
+            {mode === "semester" && (
+              <SelectBox
+                value={timeline}
+                onChange={(e) =>
+                  setTimeline(
+                    e.target.value
+                  )
+                }
+              >
+                {semesterList.map((x) => (
+                  <option
+                    key={x.id}
+                    value={x.id}
+                  >
+                    {x.tahun_id} - {x.nama}
+                  </option>
+                ))}
+              </SelectBox>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* STATS */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        <StatCard
+          title="Hadir"
+          value={totalHadir}
+          color="text-emerald-600"
+        />
+        <StatCard
+          title="Sakit"
+          value={totalSakit}
+          color="text-blue-600"
+        />
+        <StatCard
+          title="Izin"
+          value={totalIzin}
+          color="text-amber-600"
+        />
+        <StatCard
+          title="Alpha"
+          value={totalAlpha}
+          color="text-rose-600"
+        />
       </div>
 
       {/* TABLE */}
-      <div className="bg-white rounded-2xl border border-gray-300 overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-200 font-bold text-[#4A342B]">
+      <div className="rounded-3xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 font-black text-gray-900">
           {tab === "pengajar"
             ? "Rekap Presensi Pengajar"
             : "Rekap Presensi Wali Kelas"}
         </div>
 
-        <table className="w-full text-sm">
-          <thead className="bg-[#4A342B] text-white">
-            <tr>
-              <th className="py-3">
-                No
-              </th>
-              <th className="py-3 text-left">
-                Nama
-              </th>
-              <th className="py-3">
-                Kelas
-              </th>
-              <th className="py-3">
-                Hadir
-              </th>
-              <th className="py-3">
-                Sakit
-              </th>
-              <th className="py-3">
-                Izin
-              </th>
-              <th className="py-3">
-                Alpha
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loadingMaster ||
-            loading ? (
+        {/* desktop */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full min-w-[760px] text-sm">
+            <thead className="bg-gray-50">
               <tr>
-                <td
-                  colSpan="7"
-                  className="py-8 text-center"
-                >
-                  Memuat...
-                </td>
+                <Th>No</Th>
+                <Th left>Nama</Th>
+                <Th>Kelas</Th>
+                <Th>Hadir</Th>
+                <Th>Sakit</Th>
+                <Th>Izin</Th>
+                <Th>Alpha</Th>
               </tr>
-            ) : filtered.length ? (
-              filtered.map(
-                (
-                  x,
-                  i
-                ) => (
+            </thead>
+
+            <tbody>
+              {loading || loadingMaster ? (
+                <LoadingRow />
+              ) : filtered.length ? (
+                filtered.map((x, i) => (
                   <tr
                     key={i}
-                    className="border-b hover:bg-[#F8F6F3]"
+                    className="border-t border-gray-100"
                   >
-                    <td className="py-3 text-center">
-                      {i + 1}
-                    </td>
-                    <td className="py-3">
+                    <Td>{i + 1}</Td>
+                    <Td left bold>
                       {x.nama}
-                    </td>
-                    <td className="text-center">
+                    </Td>
+                    <Td>
                       Kelas {x.kelas}
-                    </td>
-                    <td className="text-center text-green-600 font-bold">
-                      {x.hadir}
-                    </td>
-                    <td className="text-center text-blue-600 font-bold">
-                      {x.sakit}
-                    </td>
-                    <td className="text-center text-yellow-600 font-bold">
-                      {x.izin}
-                    </td>
-                    <td className="text-center text-red-600 font-bold">
-                      {x.alpha}
-                    </td>
+                    </Td>
+                    <Td green>{x.hadir}</Td>
+                    <Td blue>{x.sakit}</Td>
+                    <Td amber>{x.izin}</Td>
+                    <Td red>{x.alpha}</Td>
                   </tr>
-                )
-              )
-            ) : (
-              <tr>
-                <td
-                  colSpan="7"
-                  className="py-8 text-center text-gray-400"
-                >
-                  Tidak ada data
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                ))
+              ) : (
+                <EmptyRow />
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* mobile */}
+        <div className="md:hidden p-4 space-y-3">
+          {loading || loadingMaster ? (
+            <CardLoading />
+          ) : filtered.length ? (
+            filtered.map((x, i) => (
+              <div
+                key={i}
+                className="rounded-3xl border border-gray-100 p-4"
+              >
+                <h3 className="font-black text-gray-900">
+                  {x.nama}
+                </h3>
+
+                <p className="text-sm text-gray-500 mt-1">
+                  Kelas {x.kelas}
+                </p>
+
+                <div className="grid grid-cols-4 gap-2 mt-4 text-center text-xs">
+                  <MiniStat
+                    label="H"
+                    val={x.hadir}
+                    type="hadir"
+                  />
+                  <MiniStat
+                    label="S"
+                    val={x.sakit}
+                    type="sakit"
+                  />
+                  <MiniStat
+                    label="I"
+                    val={x.izin}
+                    type="izin"
+                  />
+                  <MiniStat
+                    label="A"
+                    val={x.alpha}
+                    type="alpha"
+                  />
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center text-gray-400 py-10">
+              Tidak ada data
+            </div>
+          )}
+        </div>
       </div>
+    </section>
+  );
+}
+
+/* COMPONENT */
+
+function InputSearch({
+  search,
+  setSearch,
+}) {
+  return (
+    <div className="relative">
+      <Search
+        size={18}
+        className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+      />
+      <input
+        value={search}
+        onChange={(e) =>
+          setSearch(e.target.value)
+        }
+        placeholder="Cari nama..."
+        className="w-full h-11 rounded-2xl border border-gray-200 pl-11 pr-4"
+      />
+    </div>
+  );
+}
+
+function SelectBox(props) {
+  return (
+    <select
+      {...props}
+      className="h-11 rounded-2xl border border-gray-200 px-4 w-full"
+    />
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  color,
+}) {
+  return (
+    <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-4">
+      <p className="text-xs font-black uppercase tracking-widest text-gray-400">
+        {title}
+      </p>
+      <h3
+        className={`text-2xl font-black mt-1 ${color}`}
+      >
+        {value}
+      </h3>
+    </div>
+  );
+}
+
+function Th({
+  children,
+  left,
+}) {
+  return (
+    <th
+      className={`px-4 py-3 text-xs font-black uppercase text-gray-500 ${
+        left
+          ? "text-left"
+          : "text-center"
+      }`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({
+  children,
+  left,
+  bold,
+  green,
+  blue,
+  amber,
+  red,
+}) {
+  const color = green
+    ? "text-emerald-600"
+    : blue
+    ? "text-blue-600"
+    : amber
+    ? "text-amber-600"
+    : red
+    ? "text-rose-600"
+    : "text-gray-700";
+
+  return (
+    <td
+      className={`px-4 py-3 text-center ${color} ${
+        left
+          ? "text-left"
+          : ""
+      } ${
+        bold
+          ? "font-bold"
+          : ""
+      }`}
+    >
+      {children}
+    </td>
+  );
+}
+
+function LoadingRow() {
+  return (
+    <tr>
+      <td
+        colSpan="7"
+        className="py-10 text-center"
+      >
+        <Loader2 className="animate-spin mx-auto text-gray-300" />
+      </td>
+    </tr>
+  );
+}
+
+function EmptyRow() {
+  return (
+    <tr>
+      <td
+        colSpan="7"
+        className="py-10 text-center text-gray-400"
+      >
+        Tidak ada data
+      </td>
+    </tr>
+  );
+}
+
+function CardLoading() {
+  return (
+    <div className="text-center py-10">
+      <Loader2 className="animate-spin mx-auto text-gray-300" />
+    </div>
+  );
+}
+
+function MiniStat({
+  label,
+  val,
+  type,
+}) {
+  const style =
+    type === "hadir"
+      ? "bg-emerald-50 text-emerald-700"
+      : type === "sakit"
+      ? "bg-blue-50 text-blue-700"
+      : type === "izin"
+      ? "bg-amber-50 text-amber-700"
+      : "bg-rose-50 text-rose-700";
+
+  return (
+    <div
+      className={`rounded-2xl p-2 ${style}`}
+    >
+      <p className="font-bold opacity-70">
+        {label}
+      </p>
+      <p className="font-black">
+        {val}
+      </p>
     </div>
   );
 }
